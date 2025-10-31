@@ -81,6 +81,49 @@
                         Próximos passos: integração com ERP, autenticação por máquina, registro de turnos e motivos.
                     </p>
                 </section>
+
+                <section class="panel">
+                    <h2>Aprovação do Documento</h2>
+                    <div class="approval-form">
+                        <form id="ddp-approval-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ddp-empresa">Nome da Empresa</label>
+                                    <input id="ddp-empresa" name="empresa-nome" type="text" required placeholder="Ex.: Facchini">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ddp-aprovador">Nome do Aprovador</label>
+                                    <input id="ddp-aprovador" name="aprovador-nome" type="text" required placeholder="Ex.: João Silva">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ddp-cpf">CPF do Aprovador</label>
+                                    <input id="ddp-cpf" name="aprovador-cpf" type="text" maxlength="14" placeholder="000.000.000-00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ddp-cargo">Cargo/Função</label>
+                                    <input id="ddp-cargo" name="aprovador-cargo" type="text" placeholder="Ex.: Gerente de Produção">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ddp-email">Email para Confirmação</label>
+                                    <input id="ddp-email" name="aprovador-email" type="email" required placeholder="email@empresa.com.br">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ddp-observacoes">Observações (opcional)</label>
+                                    <input id="ddp-observacoes" name="observacoes-aprovacao" type="text" placeholder="Comentários ou observações">
+                                </div>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                                <button id="ddp-approval-submit" type="submit" class="approval-button">Validar e Enviar Aprovação</button>
+                            </div>
+                        </form>
+                        <div id="ddp-success" class="success-message" style="display:none; margin-top:12px;">✓ Aprovação enviada com sucesso.</div>
+                        <div id="ddp-error" class="error-message" style="display:none; margin-top:12px;">✗ Erro ao enviar. Verifique os dados.</div>
+                    </div>
+                </section>
             </div>
         </div>
     </div>

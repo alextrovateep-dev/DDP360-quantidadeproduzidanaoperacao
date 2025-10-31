@@ -88,6 +88,16 @@ body {
 .machine-log { max-height: 120px; overflow: auto; border-top: 1px solid var(--border); padding-top: 8px; }
 .machine-log ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 
+/* Approval form (DDP 360) */
+.approval-form { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group label { font-weight: 600; color: var(--muted); margin-bottom: 6px; display: block; }
+.form-group input[type="text"], .form-group input[type="email"] { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: var(--panel); color: var(--text); }
+.approval-button { background: #2563eb; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; cursor: pointer; }
+.approval-button:hover { background: #1d4ed8; }
+.success-message { background: #dcfce7; color: #14532d; border: 1px solid #86efac; padding: 10px; border-radius: 8px; }
+.error-message { background: #fee2e2; color: #7f1d1d; border: 1px solid #fecaca; padding: 10px; border-radius: 8px; }
+
 /* Popup */
 .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.2); display: grid; place-items: center; z-index: 1000; }
 .popup-box { background: #fef3c7; color: #7c2d12; border: 1px solid #f59e0b; border-radius: 10px; padding: 16px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); font-weight: 600; min-width: 320px; text-align: center; }

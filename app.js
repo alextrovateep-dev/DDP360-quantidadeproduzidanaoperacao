@@ -301,6 +301,7 @@
         renderKpis();
         renderMachinesGrid();
         wireNavigation();
+        wireDdp360Form();
     }
 
     window.TeepOEEApp = {
@@ -526,6 +527,111 @@
         btnA.onclick = () => activate('A');
         btnD.onclick = () => activate('D');
         activate('A');
+    }
+
+    function wireDdp360Form() {
+        const form = document.getElementById('ddp-approval-form');
+        if (!form) return;
+        const cpfInput = document.getElementById('ddp-cpf');
+        if (cpfInput && !cpfInput._maskBound) {
+            cpfInput.addEventListener('input', () => {
+                let v = cpfInput.value.replace(/\D/g, '');
+                if (v.length > 11) v = v.slice(0, 11);
+                v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                cpfInput.value = v;
+            });
+            cpfInput._maskBound = true;
+        }
+
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('ddp-approval-submit');
+            const ok = sendDdpApproval();
+            if (btn) btn.disabled = true;
+            ok.finally(() => { if (btn) btn.disabled = false; });
+        };
+    }
+
+    function sendDdpApproval() {
+        const successBox = document.getElementById('ddp-success');
+        const errorBox = document.getElementById('ddp-error');
+        if (successBox) successBox.style.display = 'none';
+        if (errorBox) errorBox.style.display = 'none';
+
+        const empresa = document.getElementById('ddp-empresa')?.value?.trim();
+        const nome = document.getElementById('ddp-aprovador')?.value?.trim();
+        const cpf = document.getElementById('ddp-cpf')?.value?.trim() || '';
+        const cargo = document.getElementById('ddp-cargo')?.value?.trim() || 'Não informado';
+        const email = document.getElementById('ddp-email')?.value?.trim();
+        const obs = document.getElementById('ddp-observacoes')?.value?.trim() || 'Nenhuma observação';
+
+        if (!empresa || !nome || !email) {
+            if (errorBox) { errorBox.textContent = 'Por favor, preencha empresa, aprovador e e-mail.'; errorBox.style.display = 'block'; }
+            return Promise.resolve();
+        }
+
+        const data = new FormData();
+        const payload = {
+            _subject: 'Aprovação DDP Facchini',
+            Tipo: 'Aprovação DDP Facchini',
+            Empresa: empresa,
+            Aprovador: nome,
+            CPF: cpf,
+            Cargo: cargo,
+            Email: email,
+            Observações: obs,
+            Data: new Date().toLocaleString('pt-BR'),
+            Sistema: 'Protótipo Facchini',
+        };
+        Object.keys(payload).forEach(k => data.append(k, payload[k]));
+
+        return fetch('https://formspree.io/f/mblybqqb', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' },
+            body: data,
+            mode: 'cors'
+        }).then(async (resp) => {
+            if (resp.ok) {
+                try { await resp.json(); } catch (e) {}
+                if (successBox) successBox.style.display = 'block';
+                document.getElementById('ddp-approval-form').reset();
+            } else {
+                // fallback
+                sendViaHiddenForm(payload);
+                if (successBox) successBox.style.display = 'block';
+            }
+        }).catch(() => {
+            sendViaHiddenForm(payload);
+            if (successBox) successBox.style.display = 'block';
+        });
+    }
+
+    function sendViaHiddenForm(emailData) {
+        let iframe = document.getElementById('ddp-hidden-submit');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'ddp-hidden-submit';
+            iframe.name = 'ddp-hidden-submit';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'https://formspree.io/f/mblybqqb';
+        form.target = 'ddp-hidden-submit';
+        form.style.display = 'none';
+        Object.keys(emailData).forEach(key => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = emailData[key];
+            form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        setTimeout(() => { if (form.parentNode) document.body.removeChild(form); }, 1500);
     }
 })();
 

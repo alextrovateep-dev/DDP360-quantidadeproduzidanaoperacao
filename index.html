@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeepOEE - Validação de Sequência entre Operações</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <h1>TeepOEE – Validação de Sequência entre Operações</h1>
+        <div class="op-selector">
+            <label for="opSelect">Ordem de Produção</label>
+            <select id="opSelect"></select>
+            <button id="reloadData" class="btn-warning" title="Recarregar dados">⟳</button>
+            <button id="resetSim" class="btn-warning" title="Resetar simulação">Reset Teste</button>
+        </div>
+    </header>
+    <div class="disclaimer-banner" role="note">
+        Este é um sistema ilustrativo da lógica. Não é a versão oficial do sistema.
+    </div>
+    <div class="shell">
+        <aside class="sidebar">
+            <nav class="side-nav">
+                <button id="navApontamento" class="nav-btn active">Apontamento</button>
+                <button id="navDDP" class="nav-btn">DDP 360</button>
+            </nav>
+        </aside>
+        <div class="main-content">
+            <div id="pageApontamento">
+                <main class="layout">
+                    <section class="panel operations-panel">
+                        <h2>Operações da OP</h2>
+                        <div id="operationsTableContainer"></div>
+                    </section>
+
+                    <section class="panel simulation-panel" hidden>
+                        <h2>Simulação e Reporte Parcial</h2>
+                        <form id="reportForm" class="report-form">
+                            <div class="form-row">
+                                <label for="operationSelect">Operação</label>
+                                <select id="operationSelect"></select>
+                            </div>
+                            <div class="form-row">
+                                <label for="goodQtyInput">Quantidade BOA</label>
+                                <input id="goodQtyInput" type="number" min="0" step="1" placeholder="pcs boas" required>
+                            </div>
+                            <div class="form-row">
+                                <label for="scrapQtyInput">Quantidade REFUGADA</label>
+                                <input id="scrapQtyInput" type="number" min="0" step="1" placeholder="pcs refugadas" required>
+                            </div>
+                            <div class="form-row">
+                                <button type="submit">Reportar</button>
+                            </div>
+                        </form>
+                        <div id="resultArea" class="result-area" aria-live="polite"></div>
+                        <div class="log-area">
+                            <h3>Histórico</h3>
+                            <ul id="logList"></ul>
+                        </div>
+                    </section>
+                </main>
+
+                <section class="machines" id="machinesGrid"></section>
+            </div>
+
+            <div id="pageDDP360" hidden>
+                <section class="panel">
+                    <h2>DDP 360 – Visão do Processo</h2>
+                    <p>
+                        Esta seção descreve, em alto nível, o processo proposto para o projeto:
+                    </p>
+                    <ol>
+                        <li>Aquisição das previsões de OP e roteiro no ERP ao abrir a OP.</li>
+                        <li>Apontamento distribuído por etapa (máquinas), com validação de sequência e pendências.</li>
+                        <li>Regras: Etapa 1 limitada ao previsto da OP; demais etapas limitadas às boas da etapa anterior.</li>
+                        <li>Alertas e bloqueios quando a soma de boas+refugo exceder o pendente.</li>
+                        <li>Sincronização e auditoria para consolidação no TeepOEE/ERP.</li>
+                    </ol>
+                    <p>
+                        Próximos passos: integração com ERP, autenticação por máquina, registro de turnos e motivos.
+                    </p>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <small>DDP-FACCHINI-SEQ002 • Protótipo de validação entre operações no TeepOEE</small>
+    </footer>
+
+    <div id="popupOverlay" class="popup-overlay" hidden>
+        <div class="popup-box" role="alert" aria-live="assertive">
+            <span id="popupMessage"></span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            window.TeepOEEApp.init();
+        });
+    </script>
+</body>
+</html>
+
+

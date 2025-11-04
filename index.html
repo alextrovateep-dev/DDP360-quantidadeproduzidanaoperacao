@@ -3,148 +3,1299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TeepOEE - Validação de Sequência entre Operações</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>DDP - Documento Técnico - Caldlaser | TeepMES</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.45;
+            color: #333;
+            max-width: 21cm;
+            margin: 0 auto;
+            padding: 18px;
+        }
+        h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #507A69;
+            border-bottom: 1px solid rgba(80, 122, 105, 0.35);
+            padding-bottom: 6px;
+            margin-top: 22px;
+            margin-bottom: 12px;
+        }
+        h2 {
+            font-size: 13.5pt;
+            font-weight: bold;
+            color: #507A69;
+            margin-top: 18px;
+            margin-bottom: 10px;
+        }
+        h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #2d4538;
+            margin-top: 14px;
+            margin-bottom: 8px;
+        }
+        h4 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        p {
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        ul, ol {
+            margin-left: 22px;
+            margin-bottom: 10px;
+        }
+        li {
+            margin-bottom: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10pt;
+        }
+        th {
+            background-color: #507A69;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #2d4538;
+        }
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(80, 122, 105, 0.25);
+        }
+        .header-logos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .header-logos > div {
+            flex: 1;
+            text-align: center;
+        }
+        .header-logos > div:first-child {
+            text-align: left;
+        }
+        .header-logos > div:last-child {
+            text-align: right;
+        }
+        .header-logos img {
+            max-height: 56px;
+            max-width: 220px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        .header h1 {
+            font-size: 22pt;
+            color: #507A69;
+            margin-bottom: 10px;
+            border-bottom: 0;
+        }
+        .header-info {
+            font-size: 11pt;
+            color: #666;
+        }
+        .section {
+            page-break-inside: avoid;
+            margin-bottom: 18px;
+        }
+        .process-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #507A69;
+            padding: 12px;
+            margin: 12px 0;
+        }
+        .responsibility-box {
+            background-color: #e8f5e9;
+            border: 1px solid #507A69;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .technical-spec {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 12px 0;
+        }
+        .flow-step {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        /* Fluxo visual (estático e profissional) */
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 14px;
+            margin: 10px 0;
+        }
+        .flow-diagram .node {
+            background: #fff;
+            border: 1px solid #dcdcdc;
+            border-left: 4px solid #507A69;
+            border-radius: 6px;
+            min-width: 140px;
+            text-align: center;
+            color: #2d4538;
+            padding: 10px 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .flow-diagram .node .title { font-weight: 700; }
+        .flow-diagram .node .sub { font-size: 10pt; color: #5a6a62; }
+        .flow-diagram .arrow { color: #507A69; font-size: 18pt; font-weight: 700; padding: 0 2px; }
+        .component-table {
+            width: 100%;
+            margin: 15px 0;
+        }
+        .reference-link {
+            color: #507A69;
+            text-decoration: none;
+        }
+        .reference-link:hover {
+            text-decoration: underline;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+        .approval-section {
+            page-break-before: always;
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid rgba(80, 122, 105, 0.35);
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .logo-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+        .logo-container > div {
+            flex: 1;
+            text-align: center;
+        }
+        .logo-container > div:first-child {
+            text-align: left;
+        }
+        .logo-container > div:last-child {
+            text-align: right;
+        }
+        .logo-container img {
+            max-height: 64px;
+            max-width: 220px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        .approval-form {
+            background: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #2d4538;
+            font-size: 11pt;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 11pt;
+            font-family: 'Calibri', 'Arial', sans-serif;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #507A69;
+            box-shadow: 0 0 5px rgba(80, 122, 105, 0.3);
+        }
+        .approval-button {
+            background: linear-gradient(135deg, #507A69, #3d5f4e);
+            color: #fff;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 11pt;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            width: auto;
+            transition: background 0.2s ease;
+            display: inline-block;
+        }
+        .approval-button:hover {
+            background: linear-gradient(135deg, #3d5f4e, #2d4538);
+        }
+        .approval-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .approval-title {
+            text-align: center;
+            color: #507A69;
+            margin-bottom: 16px;
+            font-size: 15pt;
+        }
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            display: none;
+            border: 1px solid #c3e6cb;
+        }
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            display: none;
+            border: 1px solid #f5c6cb;
+        }
+        /* Export PDF button and print timestamp */
+        .export-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+        .export-btn { background: #fff; color: #507A69; border: 1px solid #507A69; padding: 8px 16px; border-radius: 6px; font-size: 11pt; font-weight: 600; cursor: pointer; }
+        .export-btn:hover { background: #f2f5f3; }
+        .print-timestamp { display: none; color: #666; font-size: 10pt; text-align: center; margin-top: 10px; }
+        @media print {
+            @page { margin: 1.4cm; }
+            body { padding: 0; max-width: 100%; }
+            .export-actions { display: none !important; }
+            .print-timestamp { display: block; position: fixed; right: 12mm; bottom: 10mm; font-size: 9pt; color: #555; }
+            .header { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.15); }
+            .header-logos { margin-bottom: 10px; padding-bottom: 8px; }
+            h1 { margin-top: 10px; margin-bottom: 6px; padding-bottom: 4px; }
+            h2 { margin-top: 8px; margin-bottom: 6px; }
+            h3 { margin-top: 6px; margin-bottom: 4px; }
+            .section { page-break-inside: auto; margin-bottom: 10px; }
+            .page-break { page-break-before: auto !important; }
+            .process-box, .responsibility-box, .technical-spec, .flow-step { margin: 8px 0; padding: 8px; border-width: 1px; }
+            table th, table td { padding: 6px; }
+            .flow-diagram { gap: 6px; padding: 8px; }
+            .approval-section { margin-top: 12px; padding: 12px; box-shadow: none; }
+        }
+    </style>
 </head>
 <body>
-    <header class="app-header">
-        <h1>TeepOEE – Validação de Sequência entre Operações</h1>
-        <div class="op-selector">
-            <label for="opSelect">Ordem de Produção</label>
-            <select id="opSelect"></select>
-            <button id="reloadData" class="btn-warning" title="Recarregar dados">⟳</button>
-            <button id="resetSim" class="btn-warning" title="Resetar simulação">Reset Teste</button>
-        </div>
-    </header>
-    <div class="disclaimer-banner" role="note">
-        Este é um sistema ilustrativo da lógica. Não é a versão oficial do sistema.
-    </div>
-    <div class="shell">
-        <aside class="sidebar">
-            <nav class="side-nav">
-                <button id="navApontamento" class="nav-btn active">Apontamento</button>
-                <button id="navDDP" class="nav-btn">DDP 360</button>
-            </nav>
-        </aside>
-        <div class="main-content">
-            <div id="pageApontamento">
-                <main class="layout">
-                    <section class="panel operations-panel">
-                        <h2>Operações da OP</h2>
-                        <div id="operationsTableContainer"></div>
-                    </section>
-
-                    <section class="panel simulation-panel" hidden>
-                        <h2>Simulação e Reporte Parcial</h2>
-                        <form id="reportForm" class="report-form">
-                            <div class="form-row">
-                                <label for="operationSelect">Operação</label>
-                                <select id="operationSelect"></select>
-                            </div>
-                            <div class="form-row">
-                                <label for="goodQtyInput">Quantidade BOA</label>
-                                <input id="goodQtyInput" type="number" min="0" step="1" placeholder="pcs boas" required>
-                            </div>
-                            <div class="form-row">
-                                <label for="scrapQtyInput">Quantidade REFUGADA</label>
-                                <input id="scrapQtyInput" type="number" min="0" step="1" placeholder="pcs refugadas" required>
-                            </div>
-                            <div class="form-row">
-                                <button type="submit">Reportar</button>
-                            </div>
-                        </form>
-                        <div id="resultArea" class="result-area" aria-live="polite"></div>
-                        <div class="log-area">
-                            <h3>Histórico</h3>
-                            <ul id="logList"></ul>
-                        </div>
-                    </section>
-                </main>
-
-                <section class="machines" id="machinesGrid"></section>
+    <div class="header">
+        <div class="header-logos">
+            <div>
+                <img src="https://teep.com.br/wp-content/uploads/2023/11/cropped-cropped-teep-logo-menor-300x87.png" alt="Teep Logo">
             </div>
+            <div>
+                <img src="https://www.caldlaser.com.br/imagens/logo-quality.png" alt="Caldlaser Logo">
+            </div>
+        </div>
+        <h1>DDP – Definição de Processo e Infraestrutura</h1>
+        <div class="header-info">
+            <strong>Cliente:</strong> Caldlaser | <strong>Sistema:</strong> TeepMES | <strong>Versão:</strong> 1.1
+        </div>
+        <div class="header-info" style="margin-top: 10px;">
+            <strong>Data:</strong> <span id="current-date"></span>
+        </div>
+    </div>
 
-            <div id="pageDDP360" hidden>
-                <section class="panel">
-                    <h2>DDP 360 – Visão do Processo</h2>
-                    <p>
-                        Esta seção descreve, em alto nível, o processo proposto para o projeto:
-                    </p>
-                    <ol>
-                        <li>Aquisição das previsões de OP e roteiro no ERP ao abrir a OP.</li>
-                        <li>Apontamento distribuído por etapa (máquinas), com validação de sequência e pendências.</li>
-                        <li>Regras: Etapa 1 limitada ao previsto da OP; demais etapas limitadas às boas da etapa anterior.</li>
-                        <li>Alertas e bloqueios quando a soma de boas+refugo exceder o pendente.</li>
-                        <li>Sincronização e auditoria para consolidação no TeepOEE/ERP.</li>
-                    </ol>
-                    <p>
-                        Próximos passos: integração com ERP, autenticação por máquina, registro de turnos e motivos.
-                    </p>
-                </section>
+    <div class="export-actions">
+        <button class="export-btn" onclick="exportToPDF()">Exportar PDF</button>
+    </div>
+    <div id="print-timestamp" class="print-timestamp"></div>
 
-                <section class="panel">
-                    <h2>Aprovação do Documento</h2>
-                    <div class="approval-form">
-                        <form id="ddp-approval-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="ddp-empresa">Nome da Empresa</label>
-                                    <input id="ddp-empresa" name="empresa-nome" type="text" required placeholder="Ex.: Facchini">
-                                </div>
-                                <div class="form-group">
-                                    <label for="ddp-aprovador">Nome do Aprovador</label>
-                                    <input id="ddp-aprovador" name="aprovador-nome" type="text" required placeholder="Ex.: João Silva">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="ddp-cpf">CPF do Aprovador</label>
-                                    <input id="ddp-cpf" name="aprovador-cpf" type="text" maxlength="14" placeholder="000.000.000-00">
-                                </div>
-                                <div class="form-group">
-                                    <label for="ddp-cargo">Cargo/Função</label>
-                                    <input id="ddp-cargo" name="aprovador-cargo" type="text" placeholder="Ex.: Gerente de Produção">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="ddp-email">Email para Confirmação</label>
-                                    <input id="ddp-email" name="aprovador-email" type="email" required placeholder="email@empresa.com.br">
-                                </div>
-                                <div class="form-group">
-                                    <label for="ddp-observacoes">Observações (opcional)</label>
-                                    <input id="ddp-observacoes" name="observacoes-aprovacao" type="text" placeholder="Comentários ou observações">
-                                </div>
-                            </div>
-                            <div style="display:flex; justify-content:flex-end; gap:8px;">
-                                <button id="ddp-approval-submit" type="submit" class="approval-button">Validar e Enviar Aprovação</button>
-                            </div>
-                        </form>
-                        <div id="ddp-success" class="success-message" style="display:none; margin-top:12px;">✓ Aprovação enviada com sucesso.</div>
-                        <div id="ddp-error" class="error-message" style="display:none; margin-top:12px;">✗ Erro ao enviar. Verifique os dados.</div>
+    <div class="section">
+        <h1>Integração do ERP (KAP)</h1>
+        <p>Esta seção descreve, em nível técnico, como o TeepMES irá intercambiar dados com o ERP KAP da Caldlaser para suportar a operação diária (abertura/execução/encerramento de OPs, rastreabilidade e consolidação). A integração está prevista desde o início do projeto para simplificar cadastros e reduzir digitação; o formato e os mecanismos de troca serão definidos em conjunto sem impacto no cronograma, permitindo que a operação comece e evolua mesmo antes da integração estar ativa.</p>
+        <div class="process-box">
+            <h3>Escopo da Integração</h3>
+            <ul>
+                <li><strong>Importação (ERP → TeepMES):</strong> <u>Obrigatórios</u> para facilitar a operação: <strong>Ordens de Produção</strong>, <strong>Produtos</strong> e <strong>Operações/Roteiros</strong>. Outros itens (centros de trabalho, operadores, motivos de parada, clientes) podem ser integrados ou cadastrados manualmente no Teep.</li>
+                <li><strong>Exportação (TeepMES → ERP):</strong> dados de <strong>produção</strong>, <strong>paradas</strong>, <strong>tempos</strong> e <strong>status</strong>; opcionalmente <strong>movimentação/consumo de matérias‑primas em operação</strong>.</li>
+            </ul>
+        </div>
+        <div class="process-box">
+            <h3>Formato e Mecanismos de Troca</h3>
+            <p>O <strong>formato ainda está em definição</strong> conjuntamente com a Caldlaser. As opções viáveis incluem:</p>
+            <ul>
+                <li>Arquivos <strong>.csv</strong> (drop folder agendada)</li>
+                <li><strong>Webservice/REST</strong> (API) sobre TCP/IP</li>
+                <li><strong>View</strong> ou acesso controlado ao <strong>banco de dados</strong> (somente leitura/escrita conforme política)</li>
+                <li>Outros mecanismos equivalentes acordados entre as partes</li>
+            </ul>
+        </div>
+        <div class="process-box">
+            <h3>Responsabilidades e Premissas</h3>
+            <ul>
+                <li><strong>Caldlaser:</strong> definir o formato preferencial (campos, periodicidade, autenticação) e prover acessos/mapeamentos necessários.</li>
+                <li><strong>Teep:</strong> disponibilizar conectores e parametrizações para o formato escolhido e conduzir a homologação com a Caldlaser.</li>
+                <li><strong>Premissa:</strong> a definição do formato <u>não impacta o prazo</u> previsto; a integração é modular e pode ser ativada após o comissionamento.</li>
+                <li><strong>Operação até a integração:</strong> itens não integrados podem ser cadastrados/operados manualmente no TeepMES e migrados depois sem perda de histórico.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section page-break">
+        <h1>Resumo Executivo</h1>
+        <div class="process-box">
+            <h3>Escopo do Projeto</h3>
+            <p>Soldagem manual (41 máquinas, consumo individual), 2 lasers (fim de corte por plano), 3 dobradeiras (modo tempo) e 2 células de robôs (sinais digitais 24V).</p>
+        </div>
+        <div class="process-box">
+            <h3>Responsabilidades</h3>
+            <ul>
+                <li><strong>Caldlaser:</strong> Infra elétrica/física/rede, aquisição de relés Schneider RM17JC00MW (com TC embutido), e dados técnicos (nº de série, consumos, sinais digitais disponíveis nos robôs).</li>
+                <li><strong>Teep:</strong> Fornecimento/instalação dos módulos IoT, configuração de integrações (solda, laser, dobradeira, robô), comissionamento e treinamento.</li>
+            </ul>
+        </div>
+        <div class="process-box">
+            <h3>Resultados Esperados</h3>
+            <ul>
+                <li>Rastreabilidade por OP/agrupamento e tempos de operação/parada automáticos.</li>
+                <li>Quantidades: automáticas (laser/robô) e manuais (solda/dobradeira).</li>
+                <li>Relatórios de produtividade e OEE (quando aplicável), com histórico para melhoria contínua.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h1>1. Objetivo de infra e aplicação no chão de Fabrica</h1>
+        <p>Definir a arquitetura, responsabilidades e infraestrutura elétrica/lógica para o monitoramento e gestão de produção no <strong>TeepMES</strong>, incluindo soldagem manual (MIG/TIG), 2 lasers de corte, 3 dobradeiras e 2 robôs de solda.</p>
+        <p><strong>Meta Principal:</strong> Garantir rastreabilidade completa, medição de tempos produtivos/paradas e registro de quantidades (automático ou manual conforme o processo específico de cada máquina).</p>
+    </div>
+
+    <div class="section page-break">
+        <h1>2. Escopo e Processos Cobertos</h1>
+        
+        <h2>2.1. Soldagem Manual (MIG / TIG)</h2>
+        <p>Monitoramento de 41 máquinas de soldagem através de detecção por corrente elétrica utilizando relé Schneider RM17JC00MW (com TC embutido, faixa 2-20A), com produção manual.</p>
+        
+        <h3>Solda TIG - 6 unidades</h3>
+        <ul>
+            <li>Sumig Tiger205 = 1 unidade</li>
+            <li>Castolin Eutectic Migpulse 2001dp = 2 unidades</li>
+            <li>Miller Syncrowave200 = 2 unidades</li>
+            <li>Miller Maxstar 200 = 1 unidade</li>
+        </ul>
+        
+        <h3>Solda MIG - 35 unidades</h3>
+        <ul>
+            <li>Sumig Falcon 405 = 7 unidades</li>
+            <li>Bambozzi Tmc325B = 9 unidades</li>
+            <li>Bambozzi MTE-510i = 3 unidades</li>
+            <li>Bambozzi Megaplus 400df = 3 unidades</li>
+            <li>Bambozzi Megaplus 250 = 3 unidades</li>
+            <li>Castolin Eutectic Smartmig 4.1 = 5 unidades</li>
+            <li>Bambozzi Megaplus 350DF = 4 unidades</li>
+            <li>Sumig Intellimig 500 = 1 unidade</li>
+        </ul>
+        
+        <h2>2.2. Lasers de Corte - 2 máquinas</h2>
+        <p>Captura automática do fim de corte e quantidades por plano (agrupamento de OPs).</p>
+        
+        <h2>2.3. Dobradeiras - 3 máquinas</h2>
+        <p>Monitoramento em modo tempo (tempos de operação) com produção informada manualmente pelo operador.</p>
+        
+        <h2>2.4. Robôs de Solda - 2 células</h2>
+        <p>Monitoramento via <strong>sinais digitais 24V</strong> conectados diretamente ao módulo IoT Teep. Os sinais digitais devem indicar status do robô (ciclo completo, falha, estado operacional).</p>
+    </div>
+
+    <div class="section page-break">
+        <h1>3. Processo de Soldagem Manual (MIG/TIG)</h1>
+        
+        <h2>3.1. Método de Monitoramento</h2>
+        <p>Monitoramento indireto por corrente elétrica na tomada de alimentação da máquina de solda. O sistema detecta automaticamente quando a máquina está em operação (soldando) ou parada através da variação de corrente elétrica.</p>
+        
+        <h2>3.2. Dispositivos de Medição</h2>
+        <div class="technical-spec">
+            <p><strong>Relé de Medição e Controle de Corrente:</strong> Relé Schneider RM17JC00MW (Zelio Control) com transformador de corrente embutido, faixa de ajuste de 2-20A, tensão de trabalho 24-240VCA, com 2 contatos auxiliares NA, montável em trilho DIN.</p>
+        </div>
+        
+        <h2>3.3. Sinalização para o Sistema TeepMES</h2>
+        <p>O relé Schneider RM17JC00MW possui saída em contato seco (2NA) que aciona uma fonte de 12VDC (fornecida pela Teep junto com o módulo IoT). Esta fonte alimenta a entrada digital do módulo IoT Teep, garantindo isolamento completo entre a rede de alta tensão e o sistema de monitoramento.</p>
+        
+        <h2>3.4. Lógica de Detecção</h2>
+        <ul>
+            <li><strong>Corrente acima do setpoint configurado:</strong> Estado 'Soldando' / 'Em Operação'</li>
+            <li><strong>Corrente abaixo do setpoint configurado:</strong> Estado 'Parado' / 'Aguardando'</li>
+            <li><strong>Setpoint:</strong> Configurado individualmente por máquina, baseado no consumo "Parado" e "Soldando" informado</li>
+            <li><strong>Delays:</strong> ON 1–2 s e OFF 3–5 s para evitar oscilações e falsos disparos</li>
+        </ul>
+        
+        <h2>3.5. Produção</h2>
+        <p>A contagem de quantidade produzida é realizada manualmente pelo operador ao final da Ordem de Produção (OP). O sistema registra automaticamente os tempos de operação e parada.</p>
+        
+        <h2>3.6. Configuração Individual de Máquinas</h2>
+        <p>Cada máquina de solda possui consumo elétrico individual, mesmo sendo do mesmo modelo, devido a variações causadas por tempo de uso, manutenções e calibrações. Portanto, será necessário:</p>
+        <ul>
+            <li>Cadastrar cada máquina individualmente com seu número de série</li>
+            <li>Medir e registrar o consumo em amperes quando a máquina está parada (ligada mas não soldando)</li>
+            <li>Medir e registrar o consumo em amperes quando a máquina está soldando ativamente</li>
+            <li>Configurar o setpoint do relé Schneider RM17JC00MW entre esses dois valores para cada tomada/máquina (faixa de ajuste: 2-20A)</li>
+        </ul>
+    </div>
+
+    
+
+    <div class="section page-break">
+        <h1>4. Infraestrutura e Instalação</h1>
+        
+        <h2>4.1. Componentes por Processo</h2>
+        <table class="component-table">
+            <thead>
+                <tr>
+                    <th>Processo</th>
+                    <th>Sinal/Sensor</th>
+                    <th>Módulo Teep</th>
+                    <th>Observações Técnicas</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Soldagem Manual</strong></td>
+                    <td>Relé Schneider RM17JC00MW (TC embutido, 2-20A, 24-240VCA, 2NA)<br>Fonte 12V (fornecida pela Teep junto com o módulo IoT)</td>
+                    <td>Entradas digitais 24 V</td>
+                    <td>1 relé por tomada; setpoint ajustável 2-20A individual por máquina</td>
+                </tr>
+                <tr>
+                    <td><strong>Laser</strong></td>
+                    <td>Fim de corte (digital) / sensor de ciclo</td>
+                    <td>Entradas digitais 24 V</td>
+                    <td>Vincular a ID de plano (agrupamento de OPs)</td>
+                </tr>
+                <tr>
+                    <td><strong>Dobradeira</strong></td>
+                    <td>Sinal de operação (digital) / botão seletor</td>
+                    <td>Entradas digitais 24 V</td>
+                    <td>Modo tempo; produção manual</td>
+                </tr>
+                <tr>
+                    <td><strong>Robô de Solda</strong></td>
+                    <td>Sinal Digital 24V (ciclo completo, falha, estado operacional)</td>
+                    <td>Entradas digitais 24 V fotoisoladas</td>
+                    <td>Necessário identificar sinais digitais disponíveis no robô/PLC</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h2>4.2. Especificações Técnicas dos Componentes</h2>
+        
+        <div class="process-box">
+            <h3>Relé de Medição e Controle de Corrente - Schneider RM17JC00MW</h3>
+            <ul>
+                <li><strong>Modelo:</strong> RM17JC00MW - Zelio Control</li>
+                <li><strong>Tipo:</strong> Relé de Medição e Controle de Corrente com TC embutido</li>
+                <li><strong>Faixa de Ajuste:</strong> 2-20A</li>
+                <li><strong>Tensão de Trabalho/Nominal:</strong> 24-240VCA</li>
+                <li><strong>Frequência:</strong> 40-70Hz</li>
+                <li><strong>Contatos Auxiliares:</strong> 2NA (2 contatos normalmente abertos)</li>
+                <li><strong>Precisão de Medição:</strong> +/- 10% do valor da escala completa</li>
+                <li><strong>Precisão de Repetição:</strong> +/- 0,5% do circuito de entrada e medição</li>
+                <li><strong>Tempo de Resposta:</strong> &lt;200ms (em caso de falha)</li>
+                <li><strong>Definição de Limiar:</strong> 10...100% (ajustável)</li>
+                <li><strong>Histerese:</strong> 15% fixo</li>
+                <li><strong>Capacidade de Comutação:</strong> 1250 VA</li>
+                <li><strong>Corrente de Saída Nominal:</strong> 5A</li>
+                <li><strong>Montagem:</strong> Trilho DIN 35mm</li>
+                <li><strong>Largura:</strong> 17,5mm</li>
+                <li><strong>Grau de Proteção:</strong> IP20 (terminais) / IP30 (embalagem)</li>
+                <li><strong>Certificações:</strong> CE, UL, CSA, GL, GOST, C-Tick</li>
+                <li><strong>Quantidade:</strong> 1 unidade por tomada de soldagem</li>
+                <li><strong>Responsabilidade de Aquisição:</strong> Caldlaser</li>
+                <li><strong>Referência/Compra:</strong> <a href="https://www.dimensional.com.br/rele-corrente-24-240v-2-20a-2na-rm17jc00mw-schneider/p" target="_blank" class="reference-link">Dimensional - Relé Schneider RM17JC00MW</a></li>
+                <li><strong>Datasheet (PDF):</strong> <a href="http://tectag.sonepar.com.br/anexos/brasil/133188.pdf" target="_blank" class="reference-link">Folha de Dados - RM17JC00MW</a></li>
+            </ul>
+        </div>
+        
+        <div class="process-box">
+            <h3>Módulos IoT Teep</h3>
+            <ul>
+                <li><strong>Função:</strong> Entradas digitais 24V <strong>fotoisoladas</strong></li>
+                <li><strong>Alimentação:</strong> 12V (fonte fornecida pela Teep e instalada pelo cliente)</li>
+                <li><strong>Entradas:</strong> Digitais 24V fotoisoladas; isolamento do 220/380V garantido no módulo</li>
+                <li><strong>Comunicação:</strong> Ethernet TCP/IP (IP fixo)</li>
+            </ul>
+        </div>
+        
+        <div class="process-box">
+            <h3>Fonte 12V para Módulos IoT Teep</h3>
+            <ul>
+                <li><strong>Especificações:</strong> Fonte 12VDC fornecida pela Teep junto com os módulos IoT</li>
+                <li><strong>Capacidade:</strong> 5A por quadro</li>
+                <li><strong>Responsabilidade de Fornecimento:</strong> Teep (fornecida junto com os módulos IoT)</li>
+                <li><strong>Responsabilidade de Instalação:</strong> Cliente (Caldlaser) - pontos elétricos 110V ou 220V devem ser disponibilizados pelo cliente</li>
+                <li><strong>Proteção:</strong> Disjuntor ou fusível individual por circuito</li>
+                <li><strong>Observação:</strong> A fonte é fornecida pela Teep juntamente com cada módulo IoT, não sendo necessária aquisição separada pelo cliente</li>
+            </ul>
+        </div>
+        
+        <h2>4.3. Cabeamento Recomendado</h2>
+        <ul>
+            <li><strong>Passagem do condutor fase pelo relé:</strong> O condutor fase da tomada deve passar pelo sensor de corrente embutido no relé RM17JC00MW</li>
+            <li><strong>Saída do Relé → Módulo Teep:</strong> 2x0,25 mm² (comprimento máximo até 10 m) - conexão do contato auxiliar (2NA) à fonte 12VDC (fornecida pela Teep) e entrada digital do módulo Teep</li>
+            <li><strong>Alimentação do Relé:</strong> 24-240VCA conforme especificação da rede elétrica (conexão direta à rede, não requer fonte separada)</li>
+            <li><strong>12 VDC para módulos  -Fornecidos pela Teep:</strong> Fonte 12V/ 5 por quadro; proteção individual por disjuntores/fusíveis</li>
+            <li><strong>Ethernet:</strong> IP fixo para módulos/terminais; switch industrial; Wi‑Fi industrial onde aplicável</li>
+        </ul>
+
+        <h2>4.4. Exemplo de Ligação Elétrica e Lógica (Soldagem Manual)</h2>
+        <div class="process-box">
+            <h3>Diagrama de blocos (conceitual)</h3>
+            <pre style="white-space: pre-wrap; font-family: Consolas, 'Courier New', monospace; background:#f8f9fa; padding:10px; border:1px solid #e5e5e5; border-radius:6px;">
+Rede 220/380 V ─── Tomada da máquina ──┬──────────────┐
+                                       │              │
+                                       │     Passagem do condutor fase
+                                       │     pelo sensor de corrente
+                                       │     embutido no relé
+                                       │              ▼
+                                       │     Relé Schneider RM17JC00MW
+                                       │     (TC embutido, 2-20A ajustável)
+                                       │              │ contato auxiliar (2NA)
+                                       │              ▼
+                                       │        Fonte 12 VDC (Teep) ──► Entrada Digital 24 V do Módulo IoT Teep
+                                       │                                   │
+Máquina de Solda (MIG/TIG) ◄───────────┘                                   ▼
+                                                                  Sistema TeepMES (Tempo/Estado)
+            </pre>
+            <h3>Sequência de ligação</h3>
+            <ol>
+                <li>Passar o <strong>condutor fase</strong> da tomada da máquina de solda pelo <strong>sensor de corrente embutido</strong> do relé Schneider RM17JC00MW (instalado no painel próximo à tomada).</li>
+                <li>Alimentar o <strong>relé RM17JC00MW</strong> em <strong>24-240VCA</strong> conforme especificação da rede elétrica (conexão direta à rede, não requer fonte separada).</li>
+                <li>Configurar o <strong>setpoint</strong> do relé entre 2-20A conforme consumo da máquina (medir consumo parado e soldando).</li>
+                <li>Usar o <strong>contato auxiliar (2NA)</strong> do relé para <strong>acionar 12 VDC</strong> (por meio de fonte 12V fornecida pela Teep junto com o módulo IoT) para a <strong>entrada digital</strong> do módulo IoT Teep.</li>
+                <li>Ligar o <strong>módulo IoT Teep</strong> à rede <strong>Ethernet</strong> (IP fixo) para envio de estados ao <strong>TeepMES</strong>.</li>
+            </ol>
+            <h3>Lógica de operação</h3>
+            <ul>
+                <li>Corrente medida pelo sensor embutido &gt; setpoint configurado (2-20A) ⇒ contato auxiliar fecha ⇒ 12 V na entrada ⇒ <strong>Estado: Soldando</strong>.</li>
+                <li>Corrente &lt; setpoint (com histerese de 15% fixo) ⇒ contato auxiliar abre ⇒ 0 V na entrada ⇒ <strong>Estado: Parado</strong>.</li>
+                <li>Tempo de resposta: &lt;200ms (em caso de falha).</li>
+                <li>Histerese: 15% fixo (evita oscilações e falsos disparos).</li>
+            </ul>
+            <h3>Observações e segurança</h3>
+            <ul>
+                <li>O <strong>terminal/baia</strong> de solda é associado à máquina selecionada na abertura da OP; a <strong>tomada</strong> (T01, T02, …) deve ser confirmada.</li>
+                <li>O relé possui <strong>isolamento</strong> entre a alimentação e a medição, garantindo segurança.</li>
+                <li>Manter <strong>isolação</strong> entre 12 VDC e rede 220/380 V; utilizar cabeamento blindado e aterramento de um lado.</li>
+                <li>O relé deve ser montado em <strong>trilho DIN 35mm</strong> no painel próximo à tomada.</li>
+            </ul>
+        </div>
+
+        <h2>4.5. Fluxo Visual (Estático) – Rede → Relé (TC embutido) → 12 V → Teep → TeeOEE</h2>
+        <div class="flow-diagram" role="img" aria-label="Rede; Relé com TC embutido; Fonte 12V; Módulo Teep; TeeOEE conectados em sequência com setas">
+            <div class="node"><div class="title">Rede 220/380 V</div><div class="sub">Tomada da Baia</div></div>
+            <div class="arrow">→</div>
+            <div class="node"><div class="title">Relé RM17JC00MW</div><div class="sub">TC embutido, 2-20A</div></div>
+            <div class="arrow">→</div>
+            <div class="node"><div class="title">Fonte 12 VDC (Teep)</div><div class="sub">Contato 2NA</div></div>
+            <div class="arrow">→</div>
+            <div class="node"><div class="title">Módulo IoT Teep</div><div class="sub">Entrada Digital 24 V</div></div>
+            <div class="arrow">→</div>
+            <div class="node"><div class="title">TeeOEE / TeepMES</div><div class="sub">Estados e Tempos</div></div>
+        </div>
+    </div>
+
+    <div class="section page-break">
+        <h1>9. Identificação e Cadastro no Sistema</h1>
+        <ul>
+            <li><strong>Tomadas e pontos:</strong> T01, T02, T03, … (etiquetas físicas obrigatórias e cadastro correspondente no TeepMES)</li>
+            <li><strong>Máquinas:</strong> Código único, família (TIG/MIG/laser/dobradeira/robô), modelo, número de série e número de patrimônio quando aplicável</li>
+            <li><strong>Terminais/módulos:</strong> ID físico único, IP fixo configurado, localização física (baia/área)</li>
+            <li><strong>Planos de corte (laser):</strong> ID de agrupamento/"nesting" vinculado à OP correspondente no PCP</li>
+            <li><strong>Motivos de parada:</strong> Lista padronizada configurável (ex.: operacional, setup, falta de material, manutenção, qualidade)</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h1>8. Requisitos do Cliente (Caldlaser)</h1>
+        <div class="responsibility-box">
+            <h3>Infraestrutura Elétrica</h3>
+            <ul>
+                <li>Disponibilizar alimentação 24-240VCA para relés Schneider RM17JC00MW (conforme especificação da rede elétrica atual)</li>
+                <li>Disponibilizar pontos de eletrica 110V ou 220V para conexão da fonte Teep para módulos Teep</li>
+                <li>Fornecer proteção individual por disjuntores/fusíveis para cada circuito</li>
+            </ul>
+            
+            <h3>Infraestrutura Física</h3>
+            <ul>
+                <li>Definir e disponibilizar painéis locais para instalação dos módulos Teep, fontes 24 V e patch Ethernet</li>
+                <li>Garantir espaço adequado para montagem dos componentes (relés RM17JC00MW em trilho DIN, módulos Teep)</li>
+            </ul>
+            
+            <h3>Infraestrutura de Rede</h3>
+            <ul>
+                <li>Disponibilizar rede Ethernet/Wi‑Fi industrial nos pontos de instalação</li>
+                <li>Configurar IPs fixos conforme especificação técnica da Teep</li>
+                <li>Garantir conectividade até o servidor TeepMES</li>
+            </ul>
+            
+            <h3>Dados e Documentação Técnica</h3>
+            <ul>
+                <li>Fornecer identificação dos sinais digitais disponíveis nos robôs/PLCs (ciclo completo, falha, estado operacional), incluindo descrição e características elétricas (tensão, tipo de contato)</li>
+                <li>Validar layout de baias, tomadas e fluxos de OP/agrupamento com o PCP</li>
+                <li>Disponibilizar informações de consumo elétrico (parado/soldando) para cada máquina de solda</li>
+            </ul>
+            
+            <h3>Aquisição de Componentes</h3>
+            <ul>
+                <li>Adquirir todos os Relés Schneider RM17JC00MW necessários (1 unidade por tomada de soldagem)</li>
+                <li>Garantir que componentes estejam disponíveis para instalação no prazo acordado</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section page-break">
+        <h1>10. Responsabilidades da Teep</h1>
+        <div class="responsibility-box">
+            <h3>Fornecimento e Instalação</h3>
+            <ul>
+                <li>Fornecer todos os módulos IoT Teep necessários para o monitoramento</li>
+                <li>Instalar e configurar os módulos Teep nos painéis fornecidos pelo cliente</li>
+                <li>Realizar configuração inicial dos módulos (IP fixo, identificação, comunicação)</li>
+            </ul>
+            
+            <h3>Desenvolvimento e Configuração do Sistema</h3>
+            <ul>
+                <li>Desenvolver e configurar todas as integrações necessárias:
+                    <ul>
+                        <li>Configuração de entradas digitais 24V para robôs</li>
+                        <li>Configuração de entradas digitais para dobradeiras</li>
+                        <li>Configuração de captura automática para lasers (fim de corte)</li>
+                        <li>Configuração de monitoramento por corrente para soldagem manual</li>
+                    </ul>
+                </li>
+                <li>Configurar cadastro de todas as máquinas, tomadas e pontos de monitoramento</li>
+                <li>Desenvolver interfaces do operador específicas para cada tipo de processo</li>
+            </ul>
+            
+            <h3>Processo Padrão TeepMES</h3>
+            <ul>
+                <li>Implementar processo de abertura de OP conforme especificado para cada tipo de máquina</li>
+                <li>Desenvolver lógica de monitoramento automático de tempos (operação/parada)</li>
+                <li>Implementar captura automática de quantidades (laser/robô) e interface manual (solda/dobradeira)</li>
+                <li>Desenvolver sistema de apontamento de paradas por motivo</li>
+                <li>Implementar encerramento de OP com consolidação de dados</li>
+                <li>Desenvolver relatórios e painéis de produtividade, OEE e rastreabilidade</li>
+            </ul>
+            
+            <h3>Comissionamento e Testes</h3>
+            <ul>
+                <li>Realizar comissionamento completo de todos os pontos de monitoramento</li>
+                <li>Validar funcionamento de cada componente (relés RM17JC00MW, módulos Teep)</li>
+                <li>Testar integrações digitais para todas as máquinas (robôs, dobradeiras, lasers, soldagem manual)</li>
+                <li>Treinar operadores e equipe de manutenção</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h1>7. Segurança e EMC</h1>
+        <ul>
+            <li><strong>Isolação:</strong> Contatos auxiliares e 12 VDC (fornecidos pela Teep) completamente isolados da rede de alimentação (220V/380V conforme especificação da rede elétrica atual do cliente). O relé Schneider RM17JC00MW possui isolamento entre a alimentação (24-240VCA) e a medição, garantindo segurança.</li>
+            <li><strong>Blindagem/aterramento:</strong> Par trançado blindado obrigatório para conexões de 12VDC; aterramento de um lado apenas; utilização de ferrites em máquinas TIG com HF (alta frequência)</li>
+            <li><strong>Relé de Medição:</strong> O relé RM17JC00MW possui sensor de corrente embutido; seguir as especificações do fabricante para instalação e configuração do setpoint (2-20A)</li>
+            <li><strong>Painéis:</strong> Organização adequada de cabos, identificação clara e segregação física entre cabos de potência e cabos de sinal</li>
+        </ul>
+    </div>
+
+    <div class="section page-break">
+        <h1>6. Comissionamento e Testes</h1>
+        <h2>Checklist por Processo</h2>
+        
+        <div class="process-box">
+            <h3>Soldagem Manual (MIG/TIG)</h3>
+            <ol>
+                <li>Instalação física do relé Schneider RM17JC00MW em trilho DIN próximo a cada tomada</li>
+                <li>Passagem do condutor fase da tomada pelo sensor de corrente embutido no relé</li>
+                <li>Alimentação do relé em 24-240VCA conforme especificação da rede</li>
+                <li>Medição de corrente em vazio (máquina ligada mas não soldando) para cada máquina</li>
+                <li>Medição de corrente durante soldagem ativa para cada máquina</li>
+                <li>Configuração do setpoint do relé RM17JC00MW entre os valores de consumo parado e soldando (faixa 2-20A)</li>
+                <li>Validação do acionamento do contato auxiliar (2NA) do relé</li>
+                <li>Teste da fonte 12V (fornecida pela Teep) conectada à saída do relé</li>
+                <li>Validação da entrada digital do módulo Teep recebendo o sinal 24V</li>
+                <li>Verificação da detecção correta de estado "Soldando" vs "Parado" no sistema TeepMES</li>
+            </ol>
+        </div>
+        
+        <div class="process-box">
+            <h3>Lasers de Corte</h3>
+            <ol>
+                <li>Validação do pulso de fim de corte via saída digital da máquina/PLC</li>
+                <li>Conexão do sinal digital ao módulo Teep (entrada 24V)</li>
+                <li>Conferência do incremento automático de quantidade por plano/agrupamento</li>
+                <li>Validação da vinculação correta ao ID de plano (agrupamento de OPs)</li>
+                <li>Teste da interface de seleção de agrupamento de OPs</li>
+            </ol>
+        </div>
+        
+        <div class="process-box">
+            <h3>Dobradeiras</h3>
+            <ol>
+                <li>Validação do sinal de operação (digital ou botão seletor)</li>
+                <li>Conexão do sinal ao módulo Teep</li>
+                <li>Confrontação dos tempos registrados pelo sistema com a prática real do operador</li>
+                <li>Teste do registro manual de produção</li>
+                <li>Validação do apontamento de paradas por motivo</li>
+            </ol>
+        </div>
+        
+        <div class="process-box">
+            <h3>Robôs de Solda</h3>
+            <ol>
+                <li>Identificação e validação dos sinais digitais 24V disponíveis no robô/PLC (ciclo completo, falha, estado operacional)</li>
+                <li>Conexão dos sinais digitais às entradas do módulo IoT Teep (24V fotoisoladas)</li>
+                <li>Teste de detecção de ciclo completo (sinal digital)</li>
+                <li>Validação de detecção de falhas/alarmes (sinal digital)</li>
+                <li>Teste da contagem automática de peças baseada no sinal de ciclo completo</li>
+                <li>Validação do registro de paradas por motivo (automático via sinal de falha ou manual)</li>
+                <li>Verificação da detecção correta de estados no sistema TeepMES</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="section page-break">
+        <h1>5. Processo Padrão TeepMES para as Máquinas</h1>
+        
+        <h2>5.1. Abertura do Processo por Tipo de Máquina</h2>
+        <p>O processo de abertura varia conforme o tipo de máquina. Abaixo estão os requisitos específicos para cada categoria:</p>
+        
+        <div class="process-box">
+            <h3>1.1. Soldagem Manual (MIG/TIG) - 41 máquinas</h3>
+            <p><strong>Informações necessárias para abertura:</strong></p>
+            <ul>
+                <li><strong>Código da Ordem de Produção (OP):</strong> Informado pelo operador ou selecionado de lista disponível no sistema</li>
+                <li><strong>Código do Operador:</strong> Identificação obrigatória do operador responsável pela execução da OP (código ou login)</li>
+                <li><strong>Código da Máquina de Solda:</strong> <strong>Seleção automática</strong> - O sistema identifica automaticamente a máquina associada ao operador através de uma tabela de associação no banco de dados. A máquina é vinculada automaticamente ao informar o código do operador.</li>
+                <li><strong>Código da Tomada:</strong> Confirmação obrigatória da tomada onde a máquina está conectada (T01, T02, T03, etc.)</li>
+            </ul>
+            <p><strong>Validação do Sistema:</strong> Antes de iniciar a produção, o sistema verifica:</p>
+            <ul>
+                <li>Existência da associação operador-máquina no banco de dados</li>
+                <li>Disponibilidade da tomada selecionada (não pode estar em uso por outra OP)</li>
+                <li>Compatibilidade entre a máquina associada ao operador e a tomada (configuração de consumo elétrico)</li>
+                <li>Status operacional da máquina cadastrada</li>
+            </ul>
+        </div>
+        
+        <div class="process-box">
+            <h3>1.2. Lasers de Corte - 2 máquinas</h3>
+            <p><strong>Informações necessárias para abertura:</strong></p>
+            <ul>
+                <li><strong>Código do Agrupamento de OPs:</strong> Seleção do plano de corte/agrupamento (nesting) definido no PCP, que pode conter múltiplas OPs agrupadas</li>
+                <li><strong>Código do Operador:</strong> Identificação obrigatória do operador responsável pela execução do agrupamento</li>
+                <li><strong>Terminal:</strong> Já associado à máquina de corte; não há seleção manual de máquina</li>
+            </ul>
+            <p><strong>Características Especiais:</strong></p>
+            <ul>
+                <li>Não requer seleção de máquina individual; o terminal está vinculado fisicamente à máquina</li>
+                <li>O agrupamento de OPs permite rastreabilidade de múltiplas OPs em um único plano de corte</li>
+                <li>Sistema vincula automaticamente todas as OPs do agrupamento aos planos de corte processados</li>
+            </ul>
+        </div>
+        
+        <div class="process-box">
+            <h3>1.3. Dobradeiras - 3 máquinas</h3>
+            <p><strong>Informações necessárias para abertura:</strong></p>
+            <ul>
+                <li><strong>Código da Ordem de Produção (OP):</strong> Informado pelo operador ou selecionado de lista disponível no sistema</li>
+                <li><strong>Código do Operador:</strong> Identificação obrigatória do operador responsável pela execução da OP</li>
+                <li><strong>Terminal:</strong> Já associado à dobradeira; não há seleção manual de máquina</li>
+            </ul>
+            <p><strong>Características Especiais:</strong></p>
+            <ul>
+                <li>Não requer identificação de tomada (processo baseado em modo tempo, não em consumo elétrico)</li>
+                <li>O terminal do operador está fisicamente instalado e vinculado à máquina</li>
+            </ul>
+        </div>
+        
+        <div class="process-box">
+            <h3>1.4. Robôs de Solda - 2 células</h3>
+            <p><strong>Informações necessárias para abertura:</strong></p>
+            <ul>
+                <li><strong>Código da Ordem de Produção (OP):</strong> Informado pelo operador ou selecionado de lista disponível no sistema</li>
+                <li><strong>Código da Célula Robótica:</strong> Seleção obrigatória da célula específica (identificação por código único, ex.: ROB-01, ROB-02)</li>
+                <li><strong>Código do Operador:</strong> Identificação obrigatória do operador responsável pela execução da OP na célula</li>
+            </ul>
+            <p><strong>Características Especiais:</strong></p>
+            <ul>
+                <li>Não requer identificação de tomada (integração via sinais digitais 24V diretos)</li>
+                <li>Sistema identifica a célula pela integração física (sinais digitais conectados ao módulo IoT)</li>
+                <li>Validação de comunicação dos sinais digitais antes de iniciar produção</li>
+            </ul>
+        </div>
+        
+        <div class="flow-step">
+            <h3>2. Monitoramento Automático</h3>
+            <p>Tempos de operação/parada capturados automaticamente por sinais digitais 24V; no caso de lasers, captura adicional de fim de corte por plano.</p>
+        </div>
+        
+        <div class="flow-step">
+            <h3>3. Quantidade Produzida</h3>
+            <p>Captura automática (laser por plano; robô por ciclo completo) ou registro manual (dobradeira; soldagem manual).</p>
+        </div>
+        
+        <div class="flow-step">
+            <h3>4. Apontamento de Paradas</h3>
+            <p>Registro por motivo específico (operacional, setup, falta de material, manutenção, controle de qualidade, etc.).</p>
+        </div>
+        
+        <div class="flow-step">
+            <h3>5. Encerramento</h3>
+            <p>Fechamento de OP/agrupamento com consolidação automática de tempos e produção no TeepMES.</p>
+        </div>
+        
+        <div class="flow-step">
+            <h3>6. Relatórios e Painéis</h3>
+            <p>Geração de relatórios de produtividade por máquina/operador, cálculo de OEE (quando aplicável), histórico de paradas e rastreabilidade completa.</p>
+        </div>
+        
+        <h2>5.2. Processo Detalhado para Soldagem Manual (MIG/TIG)</h2>
+        
+        <h3>Abertura do Processo - Informações Necessárias:</h3>
+        <ul>
+            <li><strong>Código da Ordem de Produção (OP):</strong> Informado pelo operador ou selecionado de lista</li>
+            <li><strong>Código do Operador:</strong> Identificação do operador no sistema (código ou login)</li>
+            <li><strong>Código da Máquina de Solda:</strong> <strong>Seleção automática</strong> - O sistema identifica automaticamente a máquina associada ao operador através de uma tabela de associação no banco de dados</li>
+            <li><strong>Código da Tomada:</strong> Confirmação da tomada onde a máquina está conectada (T01, T02, etc.)</li>
+        </ul>
+        
+        <h3>Monitoramento Automático:</h3>
+        <ul>
+            <li><strong>Detecção de Operação:</strong> O relé Schneider RM17JC00MW (com TC embutido) detecta automaticamente quando a corrente ultrapassa o setpoint configurado (2-20A)</li>
+            <li><strong>Status do Sistema:</strong> "Soldando" (corrente alta) / "Parado" (corrente baixa)</li>
+            <li><strong>Registro:</strong> Data/hora de início e fim de cada ciclo de soldagem registrados automaticamente</li>
+            <li><strong>Tempos:</strong> Cálculo automático de tempo total de operação e tempo de parada</li>
+        </ul>
+        
+        <h3>Quantidade Produzida:</h3>
+        <ul>
+            <li><strong>Método:</strong> Manual - Operador informa quantidade ao final da OP ou durante o processo</li>
+            <li><strong>Interface:</strong> Campo numérico na tela do terminal para entrada da quantidade</li>
+        </ul>
+        
+        <h3>Apontamento de Paradas:</h3>
+        <ul>
+            <li><strong>Motivos Padrão:</strong> Operacional, Setup/Ajuste, Falta de Material, Manutenção, Controle de Qualidade, Outros</li>
+            <li><strong>Interface:</strong> Seleção de motivo em lista padronizada configurável</li>
+            <li><strong>Registro:</strong> Data/hora de início e fim de cada parada com motivo associado</li>
+        </ul>
+        
+        <h3>Encerramento da OP:</h3>
+        <ul>
+            <li><strong>Consolidação Automática:</strong> Cálculo automático de tempos de operação/parada</li>
+            <li><strong>Produção:</strong> Quantidade informada pelo operador</li>
+            <li><strong>Eficiência:</strong> Cálculo automático de OEE (Overall Equipment Effectiveness) por máquina/operador</li>
+            <li><strong>Rastreabilidade:</strong> Histórico completo da OP com todos os dados coletados</li>
+        </ul>
+        
+        <h2>5.3. Processo para Outras Máquinas (Lasers, Dobradeiras, Robôs)</h2>
+        
+        <h3>Lasers de Corte:</h3>
+        <ul>
+            <li>Abertura: Seleção de Agrupamento de OPs (plano de corte)</li>
+            <li>Monitoramento: Captura automática de fim de corte via sinal digital</li>
+            <li>Quantidade: Automática por plano (incremento a cada fim de corte)</li>
+            <li>Paradas: Apontamento manual por motivo</li>
+            <li>Encerramento: Fechamento de agrupamento com consolidação</li>
+        </ul>
+        
+        <h3>Dobradeiras:</h3>
+        <ul>
+            <li>Abertura: Seleção de OP e máquina</li>
+            <li>Monitoramento: Sinal digital de operação ou botão seletor</li>
+            <li>Quantidade: Manual (operador informa ao final do lote/ciclo)</li>
+            <li>Paradas: Apontamento manual por motivo</li>
+            <li>Encerramento: Fechamento de OP com consolidação</li>
+        </ul>
+        
+        <h3>Robôs de Solda:</h3>
+        <ul>
+            <li>Abertura: Seleção de OP e célula robótica</li>
+            <li>Monitoramento: <strong>Sinais digitais 24V</strong> conectados diretamente ao módulo IoT Teep (ciclo completo, falha, estado operacional)</li>
+            <li>Quantidade: Automática por ciclo completo detectado via sinal digital</li>
+            <li>Paradas: Automática quando detectado sinal de falha, ou manual por motivo específico</li>
+            <li>Encerramento: Fechamento de OP com consolidação</li>
+        </ul>
+    </div>
+
+    <div class="section page-break">
+        <h1>10. Anexos – Especificações Recomendadas</h1>
+        
+        <h2>10.1. Relé de Medição e Controle de Corrente</h2>
+        <ul>
+            <li><strong>Modelo:</strong> Schneider RM17JC00MW - Zelio Control</li>
+            <li><strong>Tipo:</strong> Relé de Medição e Controle de Corrente com TC embutido</li>
+            <li><strong>Faixa de Ajuste:</strong> 2-20A</li>
+            <li><strong>Tensão de Trabalho:</strong> 24-240VCA</li>
+            <li><strong>Frequência:</strong> 40-70Hz</li>
+            <li><strong>Contatos Auxiliares:</strong> 2NA (2 contatos normalmente abertos)</li>
+            <li><strong>Precisão de Medição:</strong> +/- 10% do valor da escala completa</li>
+            <li><strong>Histerese:</strong> 15% fixo</li>
+            <li><strong>Tempo de Resposta:</strong> &lt;200ms</li>
+            <li><strong>Montagem:</strong> Trilho DIN 35mm</li>
+            <li><strong>Referência/Compra:</strong> <a href="https://www.dimensional.com.br/rele-corrente-24-240v-2-20a-2na-rm17jc00mw-schneider/p" target="_blank" class="reference-link">Dimensional - Relé Schneider RM17JC00MW</a></li>
+            <li><strong>Datasheet (PDF):</strong> <a href="http://tectag.sonepar.com.br/anexos/brasil/133188.pdf" target="_blank" class="reference-link">Folha de Dados - RM17JC00MW</a></li>
+        </ul>
+        
+        <h2>10.2. Módulos Teep</h2>
+        <ul>
+            <li><strong>Função Principal:</strong> Entradas digitais 24 V fotoisoladas</li>
+            <li><strong>Isolamento:</strong> Galvânico completo do 220/380 V</li>
+            <li><strong>Comunicação:</strong> Ethernet industrial (IP fixo)</li>
+            <li><strong>Aplicação:</strong> Monitoramento de todas as máquinas via sinais digitais 24V (soldagem manual, lasers, dobradeiras, robôs)</li>
+        </ul>
+        
+        <h2>10.3. Fontes de Alimentação para Módulos IoT Teep</h2>
+        <ul>
+            <li><strong>Tipo:</strong> 12 VDC (fornecida pela Teep junto com os módulos IoT)</li>
+            <li><strong>Capacidade:</strong> 5 A por quadro</li>
+            <li><strong>Responsabilidade de Fornecimento:</strong> Teep (incluída com os módulos IoT)</li>
+            <li><strong>Responsabilidade de Instalação:</strong> Cliente (Caldlaser) - disponibilizar pontos elétricos 110V ou 220V</li>
+            <li><strong>Proteção:</strong> Disjuntor ou fusível individual por circuito</li>
+            <li><strong>Observação:</strong> As fontes são fornecidas pela Teep juntamente com cada módulo IoT, não sendo necessária aquisição separada pelo cliente</li>
+        </ul>
+    </div>
+
+    
+
+    <!-- Seção de Aprovação -->
+    <div class="approval-section">
+        <div class="logo-container">
+            <div>
+                <img src="https://teep.com.br/wp-content/uploads/2023/11/cropped-cropped-teep-logo-menor-300x87.png" alt="Teep Logo">
+            </div>
+            <div>
+                <img src="https://www.caldlaser.com.br/imagens/logo-quality.png" alt="Caldlaser Logo">
+            </div>
+        </div>
+
+        <h1 class="approval-title">11. Aprovação do Documento</h1>
+        
+        <div class="approval-form">
+            <form id="approval-form" onsubmit="validateApproval(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="empresa-nome">Nome da Empresa:</label>
+                        <input type="text" id="empresa-nome" name="empresa-nome" required placeholder="Ex: Caldlaser">
                     </div>
-                </section>
+                    <div class="form-group">
+                        <label for="aprovador-nome">Nome do Aprovador:</label>
+                        <input type="text" id="aprovador-nome" name="aprovador-nome" required placeholder="Ex: João Silva">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="aprovador-cpf">CPF do Aprovador:</label>
+                    <input type="text" id="aprovador-cpf" name="aprovador-cpf" required placeholder="Ex: 000.000.000-00" maxlength="14" oninput="formatCPF(this)">
+                </div>
+                
+                <div class="form-group">
+                    <label for="aprovador-cargo">Cargo/Função:</label>
+                    <input type="text" id="aprovador-cargo" name="aprovador-cargo" placeholder="Ex: Gerente de Produção, Diretor Industrial">
+                </div>
+                
+                <div class="form-group">
+                    <label for="aprovador-email">Email para Confirmação:</label>
+                    <input type="email" id="aprovador-email" name="aprovador-email" required placeholder="Ex: joao.silva@caldlaser.com.br">
+                </div>
+                
+                <div class="form-group">
+                    <label for="observacoes-aprovacao">Observações (opcional):</label>
+                    <textarea id="observacoes-aprovacao" name="observacoes-aprovacao" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 11pt; font-family: 'Calibri', 'Arial', sans-serif; box-sizing: border-box;" placeholder="Comentários ou observações sobre a aprovação"></textarea>
+                </div>
+                
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="submit" class="approval-button" id="validate-button">
+                        Validar e Enviar Aprovação
+                    </button>
+                </div>
+            </form>
+            
+            <div id="success-message" class="success-message">
+                <strong>✓ Aprovação enviada com sucesso!</strong><br>
+                O documento foi validado e a aprovação foi enviada por email. Você receberá uma cópia em breve.
+            </div>
+            
+            <div id="error-message" class="error-message">
+                <strong>✗ Erro ao enviar aprovação</strong><br>
+                Por favor, verifique os dados e tente novamente. Se o problema persistir, entre em contato com a equipe Teep.
             </div>
         </div>
-    </div>
-
-    <footer class="app-footer">
-        <small>DDP-FACCHINI-SEQ002 • Protótipo de validação entre operações no TeepOEE</small>
-    </footer>
-
-    <div id="popupOverlay" class="popup-overlay" hidden>
-        <div class="popup-box" role="alert" aria-live="assertive">
-            <span id="popupMessage"></span>
+        
+        <div style="margin-top: 30px; padding: 20px; background-color: #fff; border-radius: 5px; border: 1px solid #ddd;">
+            <p style="text-align: center; color: #666; font-size: 10pt; margin: 0;">
+                <strong>Documento Técnico - DDP Caldlaser</strong><br>
+                Versão 1.1 | TeepMES<br>
+                <span id="approval-date" style="margin-top: 10px; display: block;"></span>
+            </p>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <div style="page-break-before: always; margin-top: 50px; text-align: center; color: #666; font-size: 10pt; border-top: 1px solid #ddd; padding-top: 20px;">
+        <p><strong>Documento Técnico - DDP Caldlaser</strong></p>
+        <p>Versão 1.1 | TeepMES</p>
+        <p>Este documento descreve o processo técnico e o escopo de desenvolvimento do projeto de monitoramento e gestão de produção.</p>
+    </div>
+
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            window.TeepOEEApp.init();
+        // Inserir data e hora atual no cabeçalho
+        document.getElementById('current-date').textContent = new Date().toLocaleString('pt-BR');
+        
+        // Inserir data atual na seção de aprovação
+        document.getElementById('approval-date').textContent = 'Data: ' + new Date().toLocaleDateString('pt-BR', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
         });
+        
+        // Função para formatar CPF
+        function formatCPF(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            }
+            input.value = value;
+        }
+        
+        // Função para validar e enviar aprovação
+        function validateApproval(event) {
+            event.preventDefault();
+            
+            const form = document.getElementById('approval-form');
+            const formData = new FormData(form);
+            
+            const empresaNome = formData.get('empresa-nome');
+            const aprovadorNome = formData.get('aprovador-nome');
+            const aprovadorCPF = formData.get('aprovador-cpf');
+            const aprovadorCargo = formData.get('aprovador-cargo');
+            const aprovadorEmail = formData.get('aprovador-email');
+            const observacoes = formData.get('observacoes-aprovacao');
+            
+            // Validação básica
+            if (!empresaNome || !aprovadorNome || !aprovadorCPF || !aprovadorEmail) {
+                showMessage('error', 'Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            // Validação de CPF básica (deve ter 11 dígitos)
+            const cpfNumbers = aprovadorCPF.replace(/\D/g, '');
+            if (cpfNumbers.length !== 11) {
+                showMessage('error', 'CPF deve conter 11 dígitos.');
+                return;
+            }
+            
+            // Desabilitar botão durante envio
+            const button = document.getElementById('validate-button');
+            button.disabled = true;
+            button.textContent = 'Enviando...';
+            
+            // Preparar dados para Formspree (formato JSON)
+            const emailData = {
+                _subject: 'Aprovação DDP Caldlaser - ' + empresaNome,
+                Tipo: 'Aprovação DDP Caldlaser',
+                Empresa: empresaNome,
+                Aprovador: aprovadorNome,
+                CPF: aprovadorCPF,
+                Cargo: aprovadorCargo || 'Não informado',
+                Email: aprovadorEmail,
+                Observações: observacoes || 'Nenhuma observação',
+                Data: new Date().toLocaleString('pt-BR'),
+                'Versão Documento': '1.1',
+                Status: 'Aprovado'
+            };
+            
+            // Preparar FormData para envio
+            const formDataToSend = new FormData();
+            Object.keys(emailData).forEach(key => {
+                formDataToSend.append(key, emailData[key]);
+            });
+            
+            // Enviar via Formspree usando endpoint JSON (sem redirecionamento)
+            fetch('https://formspree.io/f/mblybqqb', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                body: formDataToSend,
+                mode: 'cors'
+            })
+            .then(async response => {
+                // Verificar se a resposta é OK ou se é um redirecionamento (302)
+                if (response.ok) {
+                    try {
+                        const data = await response.json();
+                        showMessage('success', '');
+                        
+                        // Limpar formulário após sucesso
+                        setTimeout(() => {
+                            form.reset();
+                        }, 3000);
+                        
+                        // Log de confirmação
+                        console.log('Aprovação enviada com sucesso para:', aprovadorEmail);
+                    } catch (e) {
+                        // Se não conseguir ler JSON, pode ser redirecionamento
+                        // Usar método alternativo
+                        sendViaHiddenForm(emailData);
+                    }
+                } else if (response.status === 302 || response.status === 0) {
+                    // Redirecionamento ou erro de CORS - usar método alternativo
+                    sendViaHiddenForm(emailData);
+                } else {
+                    throw new Error('Erro no servidor: ' + response.status);
+                }
+            })
+            .catch(error => {
+                console.error('Erro no fetch:', error);
+                // Sempre tentar método alternativo quando fetch falhar
+                // Isso cobre casos de CORS, arquivo local, etc.
+                sendViaHiddenForm(emailData);
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = 'Validar e Enviar Aprovação';
+            });
+        }
+        
+        // Função alternativa para enviar via formulário oculto (quando há erro de CORS)
+        function sendViaHiddenForm(emailData) {
+            // Criar iframe oculto para receber a resposta do Formspree
+            let iframe = document.getElementById('hidden-submit-iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'hidden-submit-iframe';
+                iframe.name = 'hidden-submit-iframe';
+                iframe.style.display = 'none';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                document.body.appendChild(iframe);
+            }
+            
+            // Criar formulário oculto
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'https://formspree.io/f/mblybqqb';
+            form.target = 'hidden-submit-iframe';
+            form.style.display = 'none';
+            
+            // Adicionar campos ao formulário
+            Object.keys(emailData).forEach(key => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = emailData[key];
+                form.appendChild(input);
+            });
+            
+            // Adicionar ao body e submeter
+            document.body.appendChild(form);
+            form.submit();
+            
+            // Remover formulário após envio
+            setTimeout(() => {
+                if (form.parentNode) {
+                    document.body.removeChild(form);
+                }
+            }, 2000);
+            
+            // Mostrar mensagem de sucesso após um pequeno delay
+            setTimeout(() => {
+                showMessage('success', '');
+                
+                // Limpar formulário principal
+                setTimeout(() => {
+                    document.getElementById('approval-form').reset();
+                }, 1000);
+            }, 500);
+        }
+        
+        // Função para mostrar mensagens
+        function showMessage(type, customMessage) {
+            const successMsg = document.getElementById('success-message');
+            const errorMsg = document.getElementById('error-message');
+            
+            if (type === 'success') {
+                successMsg.style.display = 'block';
+                errorMsg.style.display = 'none';
+            } else {
+                errorMsg.style.display = 'block';
+                successMsg.style.display = 'none';
+                if (customMessage) {
+                    errorMsg.innerHTML = '<strong>✗ Erro</strong><br>' + customMessage;
+                }
+            }
+            
+            // Scroll para mensagem
+            if (type === 'success') {
+                successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                errorMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // Exportar página inteira para PDF (via print → Salvar como PDF)
+        function exportToPDF() {
+            const stamp = document.getElementById('print-timestamp');
+            if (stamp) {
+                stamp.textContent = 'Gerado em: ' + new Date().toLocaleString('pt-BR');
+            }
+            window.print();
+        }
     </script>
 </body>
 </html>
-
-

@@ -3,148 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TeepOEE - Validação de Sequência entre Operações</title>
+    <title>TeepMES - Separação de Materiais (Simulação)</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header class="app-header">
-        <h1>TeepOEE – Validação de Sequência entre Operações</h1>
-        <div class="op-selector">
-            <label for="opSelect">Ordem de Produção</label>
-            <select id="opSelect"></select>
-            <button id="reloadData" class="btn-warning" title="Recarregar dados">⟳</button>
-            <button id="resetSim" class="btn-warning" title="Resetar simulação">Reset Teste</button>
-        </div>
-    </header>
-    <div class="disclaimer-banner" role="note">
-        Este é um sistema ilustrativo da lógica. Não é a versão oficial do sistema.
-    </div>
-    <div class="shell">
+    <div id="app-root" class="app-root">
         <aside class="sidebar">
-            <nav class="side-nav">
-                <button id="navApontamento" class="nav-btn active">Apontamento</button>
-                <button id="navDDP" class="nav-btn">DDP 360</button>
-            </nav>
-        </aside>
-        <div class="main-content">
-            <div id="pageApontamento">
-                <main class="layout">
-                    <section class="panel operations-panel">
-                        <h2>Operações da OP</h2>
-                        <div id="operationsTableContainer"></div>
-                    </section>
-
-                    <section class="panel simulation-panel" hidden>
-                        <h2>Simulação e Reporte Parcial</h2>
-                        <form id="reportForm" class="report-form">
-                            <div class="form-row">
-                                <label for="operationSelect">Operação</label>
-                                <select id="operationSelect"></select>
-                            </div>
-                            <div class="form-row">
-                                <label for="goodQtyInput">Quantidade BOA</label>
-                                <input id="goodQtyInput" type="number" min="0" step="1" placeholder="pcs boas" required>
-                            </div>
-                            <div class="form-row">
-                                <label for="scrapQtyInput">Quantidade REFUGADA</label>
-                                <input id="scrapQtyInput" type="number" min="0" step="1" placeholder="pcs refugadas" required>
-                            </div>
-                            <div class="form-row">
-                                <button type="submit">Reportar</button>
-                            </div>
-                        </form>
-                        <div id="resultArea" class="result-area" aria-live="polite"></div>
-                        <div class="log-area">
-                            <h3>Histórico</h3>
-                            <ul id="logList"></ul>
-                        </div>
-                    </section>
-                </main>
-
-                <section class="machines" id="machinesGrid"></section>
+            <div class="brand">
+                <div class="logo-container">
+                    <img src="https://teep.com.br/wp-content/uploads/2023/11/cropped-cropped-teep-logo-menor-300x87.png" alt="TeepMES Logo" class="logo-img">
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">TeepMES</div>
+                    <div class="brand-subtitle">Facchini • Separação</div>
+                </div>
             </div>
-
-            <div id="pageDDP360" hidden>
-                <section class="panel">
-                    <h2>DDP 360 – Visão do Processo</h2>
-                    <p>
-                        Esta seção descreve, em alto nível, o processo proposto para o projeto:
-                    </p>
-                    <ol>
-                        <li>Aquisição das previsões de OP e roteiro no ERP ao abrir a OP.</li>
-                        <li>Apontamento distribuído por etapa (máquinas), com validação de sequência e pendências.</li>
-                        <li>Regras: Etapa 1 limitada ao previsto da OP; demais etapas limitadas às boas da etapa anterior.</li>
-                        <li>Alertas e bloqueios quando a soma de boas+refugo exceder o pendente.</li>
-                        <li>Sincronização e auditoria para consolidação no TeepOEE/ERP.</li>
-                    </ol>
-                    <p>
-                        Próximos passos: integração com ERP, autenticação por máquina, registro de turnos e motivos.
-                    </p>
-                </section>
-
-                <section class="panel">
-                    <h2>Aprovação do Documento</h2>
-                    <div class="approval-form">
-                        <form id="ddp-approval-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="ddp-empresa">Nome da Empresa</label>
-                                    <input id="ddp-empresa" name="empresa-nome" type="text" required placeholder="Ex.: Facchini">
-                                </div>
-                                <div class="form-group">
-                                    <label for="ddp-aprovador">Nome do Aprovador</label>
-                                    <input id="ddp-aprovador" name="aprovador-nome" type="text" required placeholder="Ex.: João Silva">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="ddp-cpf">CPF do Aprovador</label>
-                                    <input id="ddp-cpf" name="aprovador-cpf" type="text" maxlength="14" placeholder="000.000.000-00">
-                                </div>
-                                <div class="form-group">
-                                    <label for="ddp-cargo">Cargo/Função</label>
-                                    <input id="ddp-cargo" name="aprovador-cargo" type="text" placeholder="Ex.: Gerente de Produção">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="ddp-email">Email para Confirmação</label>
-                                    <input id="ddp-email" name="aprovador-email" type="email" required placeholder="email@empresa.com.br">
-                                </div>
-                                <div class="form-group">
-                                    <label for="ddp-observacoes">Observações (opcional)</label>
-                                    <input id="ddp-observacoes" name="observacoes-aprovacao" type="text" placeholder="Comentários ou observações">
-                                </div>
-                            </div>
-                            <div style="display:flex; justify-content:flex-end; gap:8px;">
-                                <button id="ddp-approval-submit" type="submit" class="approval-button">Validar e Enviar Aprovação</button>
-                            </div>
-                        </form>
-                        <div id="ddp-success" class="success-message" style="display:none; margin-top:12px;">✓ Aprovação enviada com sucesso.</div>
-                        <div id="ddp-error" class="error-message" style="display:none; margin-top:12px;">✗ Erro ao enviar. Verifique os dados.</div>
+            <nav class="menu">
+                <button class="menu-item" data-route="#/separar">Separar Materiais</button>
+                <button class="menu-item" data-route="#/finalizadas">Separações Finalizadas</button>
+                <button class="menu-item" data-route="#/relatorios">Relatórios</button>
+                <button class="menu-item" data-route="#/ddp354">DDP 354</button>
+                <button class="menu-item btn-success" id="btn-ddp-approval">Aprovação Técnica DDP 354</button>
+                <button class="menu-item btn-danger" id="btn-reset-demo">Resetar Demonstração</button>
+                
+                <!-- Mensagem de propriedade intelectual fixa no menu -->
+                <div class="property-notice-fixed">
+                    <div>
+                        <div class="notice-title">© TeepMES</div>
+                        <div class="notice-text">Esta interface é de propriedade da Teep. O intuito é orientar as partes sobre a necessidade de desenvolvimento da Facchini junto ao sistema TeepMES.</div>
+                        <div class="notice-warning">⚠️ Cópia ou compartilhamento com pessoas ou empresas não conectadas ao projeto está PROIBIDO.</div>
                     </div>
-                </section>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="operator-box">
+                    <div class="op-name" id="op-name">Não autenticado</div>
+                    <button id="btn-logout" class="btn btn-ghost small" hidden>Sair</button>
+                </div>
+            </div>
+        </aside>
+        <main class="main">
+            <header class="topbar">
+                <div class="top-title">DDP – Separação e Validação de Materiais</div>
+                <div class="top-actions">
+                    <button id="btn-open-login" class="btn" title="Entrar">Entrar</button>
+                </div>
+            </header>
+            <!-- Mensagem de propriedade para telas pequenas -->
+            <div class="property-notice-mobile">
+                <div class="notice-content">
+                    <div class="notice-title">© TeepMES</div>
+                    <div class="notice-text">Esta interface é de propriedade da Teep. O intuito é orientar as partes sobre a necessidade de desenvolvimento da Facchini junto ao sistema TeepMES.</div>
+                    <div class="notice-warning">⚠️ Cópia ou compartilhamento com pessoas ou empresas não conectadas ao projeto está PROIBIDO.</div>
+                </div>
+            </div>
+            <section id="view-container" class="view-container">
+                <!-- Views renderizadas via JS -->
+            </section>
+        </main>
+    </div>
+
+    <!-- Dialogs -->
+    <dialog id="dialog-login" class="dialog">
+        <form method="dialog" class="card form" id="login-form">
+            <h3>Login do Operador</h3>
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 8px;">🔐 Credenciais de Demonstração</div>
+                <div style="font-size: 14px; color: #0369a1;">
+                    <strong>Usuário:</strong> operador<br>
+                    <strong>Senha:</strong> 1234
+                </div>
+            </div>
+            <div id="login-error" style="color:#dc2626; font-size:13px; display:none;">Usuário ou senha inválidos.</div>
+            <label>
+                <span>Usuário</span>
+                <input type="text" id="login-user" required placeholder="Digite: operador">
+            </label>
+            <label>
+                <span>Senha</span>
+                <input type="password" id="login-pass" required placeholder="Digite: 1234">
+            </label>
+            <div class="actions">
+                <button class="btn btn-ghost" value="cancel">Cancelar</button>
+                <button class="btn" id="btn-do-login" value="default">Entrar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="dialog-alternativos" class="dialog">
+        <div class="card">
+            <div class="dialog-header">
+                <h3>Selecionar Item Alternativo</h3>
+                <button class="btn btn-ghost" id="alt-close">Fechar</button>
+            </div>
+            <div class="alt-search">
+                <input id="alt-search-input" type="text" placeholder="Buscar por código ou descrição">
+            </div>
+            <div id="alt-list" class="list"></div>
+        </div>
+    </dialog>
+
+    <dialog id="dialog-confirm" class="dialog">
+        <div class="card">
+            <div class="dialog-header">
+                <h3 id="confirm-title">Confirmar</h3>
+            </div>
+            <div id="confirm-message" class="muted"></div>
+            <div class="actions">
+                <button class="btn btn-ghost" id="confirm-cancel">Cancelar</button>
+                <button class="btn" id="confirm-ok">OK</button>
             </div>
         </div>
-    </div>
+    </dialog>
 
-    <footer class="app-footer">
-        <small>DDP-FACCHINI-SEQ002 • Protótipo de validação entre operações no TeepOEE</small>
-    </footer>
-
-    <div id="popupOverlay" class="popup-overlay" hidden>
-        <div class="popup-box" role="alert" aria-live="assertive">
-            <span id="popupMessage"></span>
+    <!-- Dialog: Quantidade de Alternativo -->
+    <dialog id="dialog-alt-qty" class="dialog">
+        <div class="card">
+            <div class="dialog-header">
+                <h3 id="altq-title">Definir quantidade alternativa</h3>
+                <button class="btn btn-ghost" id="altq-close">Fechar</button>
+            </div>
+            <div style="margin-bottom:12px" id="altq-info" class="muted"></div>
+            <form id="altq-form" class="form" method="dialog">
+                <label>
+                    <span id="altq-label">Quantidade</span>
+                    <input type="number" id="altq-input" step="1" min="0" value="0" />
+                </label>
+                <div id="altq-help" class="help-error" style="display:none"></div>
+                <div class="actions">
+                    <button class="btn btn-ghost" id="altq-cancel" value="cancel">Cancelar</button>
+                    <button class="btn" id="altq-apply" value="default">Aplicar</button>
+                </div>
+            </form>
         </div>
-    </div>
+    </dialog>
+
+    <dialog id="dialog-ddp-approval" class="dialog">
+        <div class="card">
+            <div class="dialog-header">
+                <h3>Aprovação Técnica DDP 354 - Facchini</h3>
+                <button class="btn btn-ghost" id="ddp-approval-close">Fechar</button>
+            </div>
+            <form id="ddp-approval-form" class="form" action="https://formspree.io/f/mblybqqb" method="POST">
+                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                    <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 8px;">📋 DDP 354 - Separação e Validação de Materiais</div>
+                    <div style="color: #0369a1; font-size: 14px;">Formulário de aprovação técnica do processo para liberar geração de orçamento pelo departamento comercial</div>
+                </div>
+                
+                <!-- Configurações básicas do Formspree -->
+                <input type="hidden" name="subject" value="APROVACAO TECNICA DDP 354 - FACCHINI">
+                <input type="hidden" name="_captcha" value="false">
+                
+                <label>
+                    <span>Nome *</span>
+                    <input type="text" name="nome" required placeholder="Digite seu nome">
+                </label>
+                
+                <label>
+                    <span>Sobrenome *</span>
+                    <input type="text" name="sobrenome" required placeholder="Digite seu sobrenome">
+                </label>
+                
+                <label>
+                    <span>Telefone de Contato *</span>
+                    <input type="tel" name="telefone" required placeholder="(xx) xxxxx-xxxx">
+                </label>
+                
+                <label>
+                    <span>Email de Contato *</span>
+                    <input type="email" name="email" required placeholder="seu.email@empresa.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" title="Digite um email válido (exemplo: nome@empresa.com)">
+                </label>
+                
+                <label>
+                    <span>Setor *</span>
+                    <input type="text" name="setor" required placeholder="ex.: Produção, Qualidade, TI">
+                </label>
+                
+                <label>
+                    <span>Cargo *</span>
+                    <input type="text" name="cargo" required placeholder="ex.: Gerente, Supervisor, Analista">
+                </label>
+                
+                <div id="ddp-approval-error" style="color:#dc2626; font-size:13px; display:none; margin-bottom:16px;">
+                    Erro ao enviar aprovação. Tente novamente.
+                </div>
+                
+                <div id="ddp-approval-success" style="color:#16a34a; font-size:13px; display:none; margin-bottom:16px;">
+                    Aprovação técnica enviada com sucesso! O departamento comercial será notificado para prosseguir com o orçamento.
+                </div>
+                
+                <div class="actions">
+                    <button type="button" class="btn btn-ghost" id="ddp-approval-cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-success" id="ddp-approval-submit">
+                        <span id="submit-text">Aprovar Tecnicamente e Liberar para Orçamento</span>
+                        <span id="submit-loading" style="display:none;">Enviando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
 
     <script src="app.js"></script>
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            window.TeepOEEApp.init();
+        // Navegação do menu lateral (hash routing)
+        document.querySelectorAll('.menu-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                location.hash = btn.dataset.route;
+            });
         });
     </script>
 </body>
 </html>
-
 

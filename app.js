@@ -80,14 +80,20 @@
         return { good: entry.good || 0, scrap: entry.scrap || 0 };
     }
 
+    function getFinalGoods(opId, operationCode) {
+        const rep = getReported(opId, operationCode);
+        return Math.max((rep.good || 0) - (rep.scrap || 0), 0);
+    }
+
     function addReport(opId, operationCode, deltaGood, deltaScrap) {
         const next = { ...AppState.reports };
         next[opId] = next[opId] || {};
         const current = next[opId][operationCode] || { good: 0, scrap: 0 };
-        next[opId][operationCode] = {
-            good: (current.good || 0) + deltaGood,
-            scrap: (current.scrap || 0) + deltaScrap
-        };
+        const availableForScrap = (current.good || 0) + (deltaGood || 0);
+        const convertedScrap = Math.min(deltaScrap || 0, availableForScrap);
+        const newGood = Math.max((current.good || 0) + (deltaGood || 0) - convertedScrap, 0);
+        const newScrap = (current.scrap || 0) + convertedScrap;
+        next[opId][operationCode] = { good: newGood, scrap: newScrap };
         saveReports(next);
     }
 
@@ -106,32 +112,46 @@
         return prev.erpPlannedQty || 0;
     }
 
-    function validateSequence({ op, operationCode, nextGood, nextScrap }) {
+    function validateSequence({ op, operationCode, nextGood, nextScrap, skipConfirm }) {
         const operIndex = op.operations.findIndex(x => x.code === operationCode);
         const current = getReported(op.id, operationCode);
-        const nextTotals = { good: current.good + nextGood, scrap: current.scrap + nextScrap };
+        const requestedGood = nextGood; // apenas boas novas contam para pendente
 
         let cap;
         let capLabel;
         if (operIndex === 0) {
-            // Primeira etapa: bom + refugo <= previsto da OP (ERP da própria operação)
+            // Primeira etapa: bom + refugo <= previsto da OP (ERP da própria operação), pendente considera processado (boas+refugo)
             cap = op.operations[operIndex].erpPlannedQty || 0;
             capLabel = `Previsto OP (operação ${operationCode}): ${cap}`;
-            const totalProduced = nextTotals.good + nextTotals.scrap;
-            if (totalProduced <= cap) return { status: 'ok', message: `OK: bom+refugo ${totalProduced} ≤ ${capLabel}.` };
-            const pendente = Math.max(cap - (current.good + current.scrap), 0);
-            return { status: 'error', message: `Não é permitido produzir acima do previsto da OP. Tentado: ${nextGood + nextScrap}; Pendente: ${pendente}.` };
+            const processedNow = (current.good || 0) + (current.scrap || 0);
+            const remaining = Math.max(cap - processedNow, 0);
+            if (requestedGood <= remaining) return { status: 'ok', message: `OK: produção ${requestedGood} ≤ pendente ${remaining}.` };
+            if (skipConfirm) return { status: 'confirmed', message: `Aprovado ciente: produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
+            return { status: 'needs_confirm', message: `Produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
         } else {
-            // Demais etapas: limite é igual às peças boas da etapa anterior já reportadas
+            // Demais etapas: limite é igual às peças boas finais da etapa anterior (boas - refugos)
             const prevOper = op.operations[operIndex - 1];
-            const prevReported = getReported(op.id, prevOper.code);
-            cap = prevReported.good || 0;
-            capLabel = `Boas da operação anterior (${prevOper.code}): ${cap}`;
-            const totalProcessed = nextTotals.good + nextTotals.scrap;
-            if (totalProcessed <= cap) return { status: 'ok', message: `OK: processado ${totalProcessed} ≤ ${capLabel}.` };
-            const pendente = Math.max(cap - (current.good + current.scrap), 0);
-            return { status: 'error', message: `Não é permitido produzir acima do liberado de peças boas da etapa anterior. Tentado: ${nextGood + nextScrap}; Liberado: ${pendente}.` };
+            cap = getFinalGoods(op.id, prevOper.code);
+            capLabel = `Boas finais da operação anterior (${prevOper.code}): ${cap}`;
+            const processedNow = (current.good || 0) + (current.scrap || 0);
+            const remaining = Math.max(cap - processedNow, 0);
+            if (requestedGood <= remaining) return { status: 'ok', message: `OK: produção ${requestedGood} ≤ pendente ${remaining}.` };
+            if (skipConfirm) return { status: 'confirmed', message: `Aprovado ciente: produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
+            return { status: 'needs_confirm', message: `Produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
         }
+    }
+
+    function recordApprovalEvent(opId, operationCode, excess, details) {
+        const events = JSON.parse(localStorage.getItem('teepoee.approval_events') || '[]');
+        events.push({
+            timestamp: new Date().toISOString(),
+            opId,
+            operationCode,
+            excess,
+            details,
+            user: 'operador' // pode vir de autenticação futura
+        });
+        localStorage.setItem('teepoee.approval_events', JSON.stringify(events));
     }
 
     function renderOPSelector() {
@@ -174,7 +194,7 @@
                 <th>Descrição</th>
                 <th>Prevista (ERP)</th>
                 ${showPrev ? '<th>Prevista operação anterior</th>' : ''}
-                <th>Boas reportadas</th>
+                <th>Boas Finais</th>
                 <th>Refugadas reportadas</th>
                 <th>Limite atual</th>
                 <th>Resultado</th>
@@ -187,13 +207,14 @@
             const tr = document.createElement('tr');
             const prevPlanned = resolvePrevPlannedQty(op, oper.code);
             const reported = getReported(op.id, oper.code);
+            const finalGoods = getFinalGoods(op.id, oper.code);
             const operIndex = op.operations.findIndex(x => x.code === oper.code);
             let currentCap;
             if (operIndex === 0) {
                 currentCap = oper.erpPlannedQty;
             } else {
                 const prev = op.operations[operIndex - 1];
-                currentCap = getReported(op.id, prev.code).good;
+                currentCap = getFinalGoods(op.id, prev.code);
             }
             const validation = validateSequence({ op, operationCode: oper.code, nextGood: 0, nextScrap: 0 });
             const statusClass = validation.status === 'ok' ? 'chip-ok' : validation.status === 'warn' ? 'chip-warn' : 'chip-error';
@@ -203,7 +224,7 @@
                 <td>${oper.name}</td>
                 <td>${oper.erpPlannedQty}</td>
                 ${showPrev ? `<td>${prevPlanned != null ? prevPlanned : '-'}</td>` : ''}
-                <td>${reported.good}</td>
+                <td>${finalGoods}</td>
                 <td>${reported.scrap}</td>
                 <td>${currentCap}</td>
                 <td><span class="chip ${statusClass}">${validation.status.toUpperCase()}</span></td>
@@ -399,9 +420,10 @@
                 cap = oper.erpPlannedQty || 0;
             } else {
                 const prev = op.operations[idx - 1];
-                cap = getReported(op.id, prev.code).good;
+                cap = getFinalGoods(op.id, prev.code);
             }
             const processed = reported.good + reported.scrap;
+            const finalGoods = Math.max(reported.good - reported.scrap, 0);
             const pending = Math.max(cap - processed, 0);
 
             const machineId = `M${idx + 1}`;
@@ -412,7 +434,7 @@
                 </div>
                 <div class="op-metrics">
                     <div class="metric"><div class="label">Atd Prevista</div><div class="value" data-planned>${plannedTotal}</div></div>
-                    <div class="metric"><div class="label">Boas</div><div class="value" data-good>${reported.good}</div></div>
+                    <div class="metric"><div class="label">Boas Finais</div><div class="value" data-good>${finalGoods}</div></div>
                     <div class="metric"><div class="label">Refugadas</div><div class="value" data-scrap>${reported.scrap}</div></div>
                     <div class="metric"><div class="label">Pendente</div><div class="value" data-pending>${pending}</div></div>
                 </div>
@@ -443,23 +465,12 @@
                 const processedNow = (reported.good || 0) + (reported.scrap || 0);
                 const remainingBase = Math.max(cap - processedNow, 0);
 
-                // Enforce hard limit: boas+refugo digitados não podem ultrapassar o restante permitido
-                const totalTyped = g + s;
-                if (totalTyped > remainingBase) {
-                    const allowedForField = Math.max(remainingBase - (sourceField === 'good' ? s : g), 0);
-                    if (sourceField === 'good') { g = allowedForField; goodInput.value = String(g); }
-                    else if (sourceField === 'scrap') { s = allowedForField; scrapInput.value = String(s); }
-                    const msg = idx === 0
-                        ? `Não é permitido produzir acima do previsto da OP (limite ${remainingBase}).`
-                        : `Não é permitido produzir acima do liberado de peças boas da etapa anterior (limite ${remainingBase}).`;
-                    warnBox.textContent = msg;
-                    warnBox.classList.add('show');
-                    showPopup(msg);
-                }
-
-                const newGood = (reported.good || 0) + g;
-                const newScrap = (reported.scrap || 0) + s;
-                const newProcessed = newGood + newScrap;
+                // Conversão de refugo sempre a partir de boas existentes (atuais + g digitado)
+                const convertible = (reported.good || 0) + g;
+                const converted = Math.min(s, convertible);
+                const newGood = Math.max((reported.good || 0) + g - converted, 0);
+                const newScrap = (reported.scrap || 0) + converted;
+                const newProcessed = processedNow + g; // refugo não aumenta processado
                 const newPending = Math.max(cap - newProcessed, 0);
                 if (goodPreview) goodPreview.textContent = String(newGood);
                 if (scrapPreview) scrapPreview.textContent = String(newScrap);
@@ -467,10 +478,28 @@
 
                 if (g === 0 && s === 0) { warnBox.classList.remove('show'); warnBox.textContent = ''; pendPreview && (pendPreview.style.color = ''); if (commitTimer) { clearTimeout(commitTimer); commitTimer = null; } return; }
                 const result = validateSequence({ op, operationCode: codeAttr, nextGood: g, nextScrap: s });
-                const invalid = result.status === 'error';
-                if (invalid) { warnBox.textContent = result.message; warnBox.classList.add('show'); if (pendPreview) pendPreview.style.color = '#c0392b'; }
-                else {
-                    warnBox.classList.remove('show'); warnBox.textContent = ''; if (pendPreview) pendPreview.style.color = '';
+                if (result.status === 'needs_confirm') {
+                    warnBox.textContent = `Atenção: produção acima do pendente. Será solicitada confirmação.`;
+                    warnBox.classList.add('show');
+                    if (pendPreview) pendPreview.style.color = '#c58a08';
+                    // abrir popup imediatamente para confirmar excesso
+                    const overlay = document.getElementById('popupOverlay');
+                    if (overlay && overlay.hidden !== false) {
+                        showConfirmPopup(result, op.id, codeAttr, g, s, form);
+                    }
+                    // não agenda commit automático aqui; aguarda confirmação
+                    if (commitTimer) { clearTimeout(commitTimer); commitTimer = null; }
+                    return;
+                } else if (result.status === 'error') {
+                    warnBox.textContent = result.message;
+                    warnBox.classList.add('show');
+                    if (pendPreview) pendPreview.style.color = '#c0392b';
+                    if (commitTimer) { clearTimeout(commitTimer); commitTimer = null; }
+                    return;
+                } else {
+                    warnBox.classList.remove('show');
+                    warnBox.textContent = '';
+                    if (pendPreview) pendPreview.style.color = '';
                     // debounce commit on each digit
                     if (commitTimer) clearTimeout(commitTimer);
                     commitTimer = setTimeout(() => {
@@ -478,7 +507,12 @@
                         const sNow = Number(scrapInput.value) || 0;
                         if (gNow === 0 && sNow === 0) return;
                         const rNow = validateSequence({ op, operationCode: codeAttr, nextGood: gNow, nextScrap: sNow });
-                        if (rNow.status !== 'error') {
+                        if (rNow.status === 'needs_confirm') {
+                            showConfirmPopup(rNow, op.id, codeAttr, gNow, sNow, form);
+                        } else if (rNow.status === 'ok' || rNow.status === 'confirmed') {
+                            if (rNow.status === 'confirmed') {
+                                recordApprovalEvent(op.id, codeAttr, rNow.excess, rNow);
+                            }
                             addReport(op.id, codeAttr, gNow, sNow);
                             form.reset();
                         }
@@ -509,6 +543,49 @@
         const hide = () => { overlay.hidden = true; overlay.removeEventListener('click', hide); };
         overlay.addEventListener('click', hide);
         setTimeout(hide, 2500);
+    }
+
+    function showConfirmPopup(result, opId, operationCode, good, scrap, form) {
+        const overlay = document.getElementById('popupOverlay');
+        const msg = document.getElementById('popupMessage');
+        if (!overlay || !msg) {
+            if (confirm(`Produção ${good + scrap} > pendente ${result.remaining}. Excesso: ${result.excess}. Confirma?`)) {
+                const r = validateSequence({ op: getSelectedOP(), operationCode, nextGood: good, nextScrap: scrap, skipConfirm: true });
+                recordApprovalEvent(opId, operationCode, result.excess, r);
+                addReport(opId, operationCode, good, scrap);
+                form.reset();
+            }
+            return;
+        }
+        const oper = getSelectedOP().operations.find(o => o.code === operationCode);
+        msg.innerHTML = `
+            <div style="text-align: left; margin-bottom: 12px;">
+                <strong>Produção acima do pendente</strong><br>
+                Você está produzindo <strong>${good + scrap} unidades</strong> (boas: ${good}, refugadas: ${scrap})<br>
+                Pendente disponível: <strong>${result.remaining}</strong><br>
+                Excesso: <strong>${result.excess} unidades</strong><br>
+                <br>
+                Confirma que deseja gravar esta produção?
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: center;">
+                <button id="confirm-yes" style="background: #22a06b; color: white; border: 0; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Sim, confirmar</button>
+                <button id="confirm-no" style="background: #c0392b; color: white; border: 0; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancelar</button>
+            </div>
+        `;
+        overlay.hidden = false;
+        overlay.onclick = null;
+        const yesBtn = document.getElementById('confirm-yes');
+        const noBtn = document.getElementById('confirm-no');
+        yesBtn.onclick = () => {
+            const r = validateSequence({ op: getSelectedOP(), operationCode, nextGood: good, nextScrap: scrap, skipConfirm: true });
+            recordApprovalEvent(opId, operationCode, result.excess, r);
+            addReport(opId, operationCode, good, scrap);
+            form.reset();
+            overlay.hidden = true;
+        };
+        noBtn.onclick = () => {
+            overlay.hidden = true;
+        };
     }
 
     function wireNavigation() {

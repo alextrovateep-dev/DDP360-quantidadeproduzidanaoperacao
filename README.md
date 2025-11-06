@@ -33,3 +33,4 @@ Dados de parâmetros e reportes são persistidos em `localStorage` do navegador.
 - `styles.css`: estilos
 - `app.js`: mock de dados, estado, renderização e validação
 
+

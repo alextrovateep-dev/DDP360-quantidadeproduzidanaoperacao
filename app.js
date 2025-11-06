@@ -89,28 +89,24 @@
         const next = { ...AppState.reports };
         next[opId] = next[opId] || {};
         const current = next[opId][operationCode] || { good: 0, scrap: 0 };
-        const availableForScrap = (current.good || 0) + (deltaGood || 0);
-        const convertedScrap = Math.min(deltaScrap || 0, availableForScrap);
-        const newGood = Math.max((current.good || 0) + (deltaGood || 0) - convertedScrap, 0);
-        const newScrap = (current.scrap || 0) + convertedScrap;
-        next[opId][operationCode] = { good: newGood, scrap: newScrap };
+        
+        if (deltaScrap > 0) {
+            // Refugo: converte boas existentes em refugo (não reduz good, apenas aumenta scrap)
+            // good representa o total produzido; scrap representa refugos
+            // boas finais = good - scrap
+            const availableForScrap = (current.good || 0) - (current.scrap || 0); // boas finais disponíveis
+            const convertedScrap = Math.min(deltaScrap, availableForScrap);
+            const newScrap = (current.scrap || 0) + convertedScrap;
+            next[opId][operationCode] = { good: current.good || 0, scrap: newScrap };
+        } else if (deltaGood > 0) {
+            // Produção: adiciona boas (good representa total produzido)
+            const newGood = (current.good || 0) + deltaGood;
+            next[opId][operationCode] = { good: newGood, scrap: current.scrap || 0 };
+        }
         saveReports(next);
     }
 
-    function getPrevOperation(op, operationCode) {
-        const idx = op.operations.findIndex(x => x.code === operationCode);
-        if (idx <= 0) return null;
-        return op.operations[idx - 1];
-    }
-
-    function resolvePrevPlannedQty(op, operationCode) {
-        const prev = getPrevOperation(op, operationCode);
-        if (!prev) return null;
-        if (AppState.settings.sourcePrev === 'manual' && AppState.settings.manualPrevQty != null) {
-            return Number(AppState.settings.manualPrevQty) || 0;
-        }
-        return prev.erpPlannedQty || 0;
-    }
+    // getPrevOperation/resolvePrevPlannedQty removidos (não utilizados no layout atual)
 
     function validateSequence({ op, operationCode, nextGood, nextScrap, skipConfirm }) {
         const operIndex = op.operations.findIndex(x => x.code === operationCode);
@@ -120,10 +116,10 @@
         let cap;
         let capLabel;
         if (operIndex === 0) {
-            // Primeira etapa: bom + refugo <= previsto da OP (ERP da própria operação), pendente considera processado (boas+refugo)
+            // Primeira etapa: processado = apenas boas produzidas (refugo não aumenta processado)
             cap = op.operations[operIndex].erpPlannedQty || 0;
             capLabel = `Previsto OP (operação ${operationCode}): ${cap}`;
-            const processedNow = (current.good || 0) + (current.scrap || 0);
+            const processedNow = current.good || 0; // apenas boas, refugo não conta
             const remaining = Math.max(cap - processedNow, 0);
             if (requestedGood <= remaining) return { status: 'ok', message: `OK: produção ${requestedGood} ≤ pendente ${remaining}.` };
             if (skipConfirm) return { status: 'confirmed', message: `Aprovado ciente: produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
@@ -133,7 +129,7 @@
             const prevOper = op.operations[operIndex - 1];
             cap = getFinalGoods(op.id, prevOper.code);
             capLabel = `Boas finais da operação anterior (${prevOper.code}): ${cap}`;
-            const processedNow = (current.good || 0) + (current.scrap || 0);
+            const processedNow = current.good || 0; // apenas boas, refugo não conta
             const remaining = Math.max(cap - processedNow, 0);
             if (requestedGood <= remaining) return { status: 'ok', message: `OK: produção ${requestedGood} ≤ pendente ${remaining}.` };
             if (skipConfirm) return { status: 'confirmed', message: `Aprovado ciente: produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
@@ -183,7 +179,6 @@
     function renderOperationsTable() {
         const container = document.getElementById('operationsTableContainer');
         const op = getSelectedOP();
-        const showPrev = AppState.settings.showPrev === 'yes';
 
         const table = document.createElement('table');
         table.className = 'table';
@@ -193,7 +188,6 @@
                 <th>Código</th>
                 <th>Descrição</th>
                 <th>Prevista (ERP)</th>
-                ${showPrev ? '<th>Prevista operação anterior</th>' : ''}
                 <th>Boas Finais</th>
                 <th>Refugadas reportadas</th>
                 <th>Limite atual</th>
@@ -205,7 +199,6 @@
         const tbody = document.createElement('tbody');
         op.operations.forEach((oper) => {
             const tr = document.createElement('tr');
-            const prevPlanned = resolvePrevPlannedQty(op, oper.code);
             const reported = getReported(op.id, oper.code);
             const finalGoods = getFinalGoods(op.id, oper.code);
             const operIndex = op.operations.findIndex(x => x.code === oper.code);
@@ -223,7 +216,6 @@
                 <td>${oper.code}</td>
                 <td>${oper.name}</td>
                 <td>${oper.erpPlannedQty}</td>
-                ${showPrev ? `<td>${prevPlanned != null ? prevPlanned : '-'}</td>` : ''}
                 <td>${finalGoods}</td>
                 <td>${reported.scrap}</td>
                 <td>${currentCap}</td>
@@ -236,90 +228,13 @@
         container.appendChild(table);
     }
 
-    function renderSimulationForm() {
-        const op = getSelectedOP();
-        const opSelect = document.getElementById('operationSelect');
-        opSelect.innerHTML = '';
-        op.operations.forEach(oper => {
-            const opt = document.createElement('option');
-            opt.value = String(oper.code);
-            opt.textContent = `${oper.code} - ${oper.name}`;
-            opSelect.appendChild(opt);
-        });
+    // renderSimulationForm removido (tela central desativada)
 
-        const form = document.getElementById('reportForm');
-        form.onsubmit = (e) => {
-            e.preventDefault();
-            const code = Number(opSelect.value);
-            const good = Number(document.getElementById('goodQtyInput').value) || 0;
-            const scrap = Number(document.getElementById('scrapQtyInput').value) || 0;
-            if (good < 0 || scrap < 0) return;
-            if (good === 0 && scrap === 0) return;
-
-            const result = validateSequence({ op, operationCode: code, nextGood: good, nextScrap: scrap });
-            const resultArea = document.getElementById('resultArea');
-            resultArea.className = 'result-area';
-            if (result.status === 'ok') resultArea.classList.add('result-ok');
-            if (result.status === 'warn') resultArea.classList.add('result-warn');
-            if (result.status === 'error') resultArea.classList.add('result-error');
-            resultArea.textContent = result.message;
-
-            if (result.status === 'error') {
-                showPopup(result.message);
-            }
-
-            // sem log
-
-            if (result.status !== 'error') {
-                addReport(op.id, code, good, scrap);
-                document.getElementById('goodQtyInput').value = '';
-                document.getElementById('scrapQtyInput').value = '';
-            }
-        };
-    }
-
-    function renderSettings() {
-        // Painel removido da UI; proteger caso não exista
-        const seqModeEl = document.getElementById('seqMode');
-        if (!seqModeEl) return;
-        const { seqMode, showPrev, sourcePrev, manualPrevQty } = AppState.settings;
-        const showPrevEl = document.getElementById('showPrev');
-        const sourcePrevEl = document.getElementById('sourcePrev');
-        const manualPrevQtyEl = document.getElementById('manualPrevQty');
-        const manualPrevRow = document.getElementById('manualPrevRow');
-
-        seqModeEl.value = seqMode;
-        showPrevEl.value = showPrev;
-        sourcePrevEl.value = sourcePrev;
-        if (manualPrevQtyEl) manualPrevQtyEl.value = manualPrevQty != null ? manualPrevQty : '';
-        if (manualPrevRow) manualPrevRow.hidden = sourcePrev !== 'manual';
-
-        function handleSourceToggle() {
-            const isManual = sourcePrevEl && sourcePrevEl.value === 'manual';
-            if (manualPrevRow) manualPrevRow.hidden = !isManual;
-        }
-        if (sourcePrevEl) sourcePrevEl.onchange = handleSourceToggle;
-        handleSourceToggle();
-
-        const saveBtn = document.getElementById('saveSettings');
-        if (saveBtn) saveBtn.onclick = () => {
-            const newSettings = {
-                seqMode: seqModeEl.value,
-                showPrev: showPrevEl.value,
-                sourcePrev: sourcePrevEl.value,
-                manualPrevQty: manualPrevQtyEl && manualPrevQtyEl.value === '' ? null : Number(manualPrevQtyEl?.value || 0)
-            };
-            saveSettings(newSettings);
-        };
-    }
+    // renderSettings removido (parametrização fora da tela)
 
     function render() {
         renderOPSelector();
         renderOperationsTable();
-        renderSimulationForm();
-        renderSettings();
-        renderStatusBar();
-        renderKpis();
         renderMachinesGrid();
         wireNavigation();
         wireDdp360Form();
@@ -329,80 +244,9 @@
         init: render
     };
 
-    function renderStatusBar() {
-        const bar = document.getElementById('statusBar');
-        if (!bar) return;
-        const select = document.getElementById('statusToggle');
-        const label = document.getElementById('statusLabel');
-        select.value = AppState.settings.machineStatus;
-        label.textContent = AppState.settings.machineStatus === 'running' ? 'Em execução' : 'Parado';
-        bar.classList.toggle('running', AppState.settings.machineStatus === 'running');
-        select.onchange = () => {
-            saveSettings({ ...AppState.settings, machineStatus: select.value });
-        };
-    }
+    // renderStatusBar/renderKpis removidos (seções não exibidas)
 
-    function renderKpis() {
-        const op = getSelectedOP();
-        if (!op) return;
-        // Guard: KPIs removidos do HTML
-        if (!document.getElementById('kpiTotalValue')) return;
-        const plannedTotal = Math.max(...op.operations.map(o => o.erpPlannedQty || 0));
-        // Realizado na ordem: somatório de boas em TODAS as operações (protótipo)
-        let realized = 0;
-        let scrapSum = 0;
-        op.operations.forEach(oper => {
-            const rep = getReported(op.id, oper.code);
-            realized += rep.good;
-            scrapSum += rep.scrap;
-        });
-        // opcionalmente poderíamos limitar realized ao plannedTotal
-        realized = Math.min(realized, plannedTotal);
-        const pending = Math.max(plannedTotal - realized, 0);
-
-        document.getElementById('kpiTotalValue').textContent = String(plannedTotal);
-        document.getElementById('kpiDoneValue').textContent = String(realized);
-        document.getElementById('kpiScrapValue').textContent = String(scrapSum);
-        document.getElementById('kpiPendingValue').textContent = String(pending);
-    }
-
-    function renderOperationCards() {
-        const container = document.getElementById('operationCards');
-        if (!container) return;
-        const op = getSelectedOP();
-        container.innerHTML = '';
-        op.operations.forEach((oper, idx) => {
-            const card = document.createElement('div');
-            card.className = 'op-card';
-            const reported = getReported(op.id, oper.code);
-
-            let cap, capText;
-            if (idx === 0) {
-                cap = oper.erpPlannedQty || 0;
-                capText = `Limite: Previsto OP = ${cap}`;
-            } else {
-                const prev = op.operations[idx - 1];
-                const prevGood = getReported(op.id, prev.code).good;
-                cap = prevGood;
-                capText = `Limite: Boas da operação ${prev.code} = ${cap}`;
-            }
-            const processed = reported.good + reported.scrap;
-            const pending = Math.max(cap - processed, 0);
-
-            card.innerHTML = `
-                <div class="op-card-title">
-                    <span>${oper.code} - ${oper.name}</span>
-                </div>
-                <div class="op-metrics">
-                    <div class="metric"><div class="label">Boas</div><div class="value">${reported.good}</div></div>
-                    <div class="metric"><div class="label">Refugadas</div><div class="value">${reported.scrap}</div></div>
-                    <div class="metric"><div class="label">Pendente</div><div class="value">${pending}</div></div>
-                </div>
-                <div class="op-cap">${capText}</div>
-            `;
-            container.appendChild(card);
-        });
-    }
+    // renderOperationCards removido (cards duplicados descontinuados)
 
     function renderMachinesGrid() {
         const container = document.getElementById('machinesGrid');
@@ -422,7 +266,8 @@
                 const prev = op.operations[idx - 1];
                 cap = getFinalGoods(op.id, prev.code);
             }
-            const processed = reported.good + reported.scrap;
+            // processado = apenas boas produzidas (refugo não aumenta processado, pois já estava incluído)
+            const processed = reported.good || 0;
             const finalGoods = Math.max(reported.good - reported.scrap, 0);
             const pending = Math.max(cap - processed, 0);
 
@@ -439,96 +284,58 @@
                     <div class="metric"><div class="label">Pendente</div><div class="value" data-pending>${pending}</div></div>
                 </div>
                 <form class="machine-form" data-oper="${oper.code}">
-                    <div class="form-row"><label>Quantidade BOA</label><input type="number" name="good" min="0" step="1" placeholder="pcs boas"></div>
-                    <div class="form-row"><label>Quantidade REFUGADA</label><input type="number" name="scrap" min="0" step="1" placeholder="pcs refugadas"></div>
+                    <div class="form-row"><label>Quantidade BOA</label><input type="number" inputmode="numeric" name="good" min="0" step="1" placeholder="pcs boas"></div>
+                    <div class="form-row" style="display:flex; gap:8px; justify-content:flex-start;">
+                        <button type="button" class="btn primary" data-action="commit-good">Apontar Produção</button>
+                    </div>
+                    <div class="form-row"><label>Quantidade REFUGADA</label><input type="number" inputmode="numeric" name="scrap" min="0" step="1" placeholder="pcs refugadas"></div>
+                    <div class="form-row" style="display:flex; gap:8px; justify-content:flex-start;">
+                        <button type="button" class="btn btn-warning" data-action="commit-scrap">Apontar Refugo</button>
+                    </div>
                     <div class="inline-warn" data-warn></div>
                 </form>
             `;
 
-            // attach handlers immediately
+            // attach handlers: manual commit with buttons
             const form = card.querySelector('form.machine-form');
             form.onsubmit = (e) => { e.preventDefault(); };
-
-            // pre-validation on input
             const goodInput = form.querySelector('input[name="good"]');
             const scrapInput = form.querySelector('input[name="scrap"]');
+            const btnGood = form.querySelector('button[data-action="commit-good"]');
+            const btnScrap = form.querySelector('button[data-action="commit-scrap"]');
             const warnBox = form.querySelector('[data-warn]');
             const codeAttr = Number(form.getAttribute('data-oper'));
-            let commitTimer = null;
-            const updateValidity = (sourceField) => {
-                let g = Number(goodInput.value) || 0;
-                let s = Number(scrapInput.value) || 0;
-                // preview calculations
-                const goodPreview = card.querySelector('[data-good]');
-                const scrapPreview = card.querySelector('[data-scrap]');
-                const pendPreview = card.querySelector('[data-pending]');
-                const processedNow = (reported.good || 0) + (reported.scrap || 0);
-                const remainingBase = Math.max(cap - processedNow, 0);
+            // pré-visualização removida: contas só ao clicar em "Apontar"
 
-                // Conversão de refugo sempre a partir de boas existentes (atuais + g digitado)
-                const convertible = (reported.good || 0) + g;
-                const converted = Math.min(s, convertible);
-                const newGood = Math.max((reported.good || 0) + g - converted, 0);
-                const newScrap = (reported.scrap || 0) + converted;
-                const newProcessed = processedNow + g; // refugo não aumenta processado
-                const newPending = Math.max(cap - newProcessed, 0);
-                if (goodPreview) goodPreview.textContent = String(newGood);
-                if (scrapPreview) scrapPreview.textContent = String(newScrap);
-                if (pendPreview) pendPreview.textContent = String(newPending);
-
-                if (g === 0 && s === 0) { warnBox.classList.remove('show'); warnBox.textContent = ''; pendPreview && (pendPreview.style.color = ''); if (commitTimer) { clearTimeout(commitTimer); commitTimer = null; } return; }
-                const result = validateSequence({ op, operationCode: codeAttr, nextGood: g, nextScrap: s });
+            btnGood.onclick = () => {
+                const g = Number(goodInput.value) || 0;
+                if (g <= 0) return;
+                const result = validateSequence({ op, operationCode: codeAttr, nextGood: g, nextScrap: 0 });
                 if (result.status === 'needs_confirm') {
-                    warnBox.textContent = `Atenção: produção acima do pendente. Será solicitada confirmação.`;
-                    warnBox.classList.add('show');
-                    if (pendPreview) pendPreview.style.color = '#c58a08';
-                    // abrir popup imediatamente para confirmar excesso
-                    const overlay = document.getElementById('popupOverlay');
-                    if (overlay && overlay.hidden !== false) {
-                        showConfirmPopup(result, op.id, codeAttr, g, s, form);
-                    }
-                    // não agenda commit automático aqui; aguarda confirmação
-                    if (commitTimer) { clearTimeout(commitTimer); commitTimer = null; }
-                    return;
-                } else if (result.status === 'error') {
-                    warnBox.textContent = result.message;
-                    warnBox.classList.add('show');
-                    if (pendPreview) pendPreview.style.color = '#c0392b';
-                    if (commitTimer) { clearTimeout(commitTimer); commitTimer = null; }
-                    return;
-                } else {
-                    warnBox.classList.remove('show');
-                    warnBox.textContent = '';
-                    if (pendPreview) pendPreview.style.color = '';
-                    // debounce commit on each digit
-                    if (commitTimer) clearTimeout(commitTimer);
-                    commitTimer = setTimeout(() => {
-                        const gNow = Number(goodInput.value) || 0;
-                        const sNow = Number(scrapInput.value) || 0;
-                        if (gNow === 0 && sNow === 0) return;
-                        const rNow = validateSequence({ op, operationCode: codeAttr, nextGood: gNow, nextScrap: sNow });
-                        if (rNow.status === 'needs_confirm') {
-                            showConfirmPopup(rNow, op.id, codeAttr, gNow, sNow, form);
-                        } else if (rNow.status === 'ok' || rNow.status === 'confirmed') {
-                            if (rNow.status === 'confirmed') {
-                                recordApprovalEvent(op.id, codeAttr, rNow.excess, rNow);
-                            }
-                            addReport(op.id, codeAttr, gNow, sNow);
-                            form.reset();
-                        }
-                    }, 500);
+                    showConfirmPopup(result, op.id, codeAttr, g, 0, form, { current: null }, () => {
+                        render(); // atualizar cards após confirmação
+                    });
+                } else if (result.status === 'ok' || result.status === 'confirmed') {
+                    addReport(op.id, codeAttr, g, 0);
+                    form.reset();
+                    render(); // atualizar cards após apontamento
                 }
             };
-            goodInput.addEventListener('input', () => updateValidity('good'));
-            scrapInput.addEventListener('input', () => updateValidity('scrap'));
-            goodInput.addEventListener('change', () => updateValidity('good'));
-            scrapInput.addEventListener('change', () => updateValidity('scrap'));
-            goodInput.addEventListener('keyup', () => updateValidity('good'));
-            scrapInput.addEventListener('keyup', () => updateValidity('scrap'));
-            form.addEventListener('input', () => updateValidity());
-            // commit only via debounce in updateValidity (no Enter/blur to avoid duplicidade)
-            // initialize once
-            updateValidity();
+
+            btnScrap.onclick = () => {
+                const s = Number(scrapInput.value) || 0;
+                if (s <= 0) return;
+                // boas finais disponíveis = good - scrap (boas que ainda não foram refugadas)
+                const available = Math.max((reported.good || 0) - (reported.scrap || 0), 0);
+                if (s > available) {
+                    showPopup(`Refugo (${s}) maior que boas finais disponíveis (${available}).`);
+                    return;
+                }
+                addReport(op.id, codeAttr, 0, s);
+                form.reset();
+                render(); // atualizar cards após apontamento
+            };
+            // sem preview: os valores do card são atualizados após o apontamento
 
             container.appendChild(card);
         });
@@ -545,7 +352,7 @@
         setTimeout(hide, 2500);
     }
 
-    function showConfirmPopup(result, opId, operationCode, good, scrap, form) {
+    function showConfirmPopup(result, opId, operationCode, good, scrap, form, commitTimerRef, onClose) {
         const overlay = document.getElementById('popupOverlay');
         const msg = document.getElementById('popupMessage');
         if (!overlay || !msg) {
@@ -555,7 +362,13 @@
                 addReport(opId, operationCode, good, scrap);
                 form.reset();
             }
+            if (onClose) onClose();
             return;
+        }
+        // Cancelar qualquer timer pendente
+        if (commitTimerRef && commitTimerRef.current) {
+            clearTimeout(commitTimerRef.current);
+            commitTimerRef.current = null;
         }
         const oper = getSelectedOP().operations.find(o => o.code === operationCode);
         msg.innerHTML = `
@@ -576,15 +389,27 @@
         overlay.onclick = null;
         const yesBtn = document.getElementById('confirm-yes');
         const noBtn = document.getElementById('confirm-no');
+        const closePopup = () => {
+            overlay.hidden = true;
+            if (onClose) onClose();
+        };
         yesBtn.onclick = () => {
             const r = validateSequence({ op: getSelectedOP(), operationCode, nextGood: good, nextScrap: scrap, skipConfirm: true });
             recordApprovalEvent(opId, operationCode, result.excess, r);
             addReport(opId, operationCode, good, scrap);
             form.reset();
-            overlay.hidden = true;
+            closePopup();
+            render(); // atualizar cards após confirmação
         };
         noBtn.onclick = () => {
-            overlay.hidden = true;
+            // Cancelar timer se ainda existir
+            if (commitTimerRef && commitTimerRef.current) {
+                clearTimeout(commitTimerRef.current);
+                commitTimerRef.current = null;
+            }
+            // Limpar campos do formulário SEM salvar
+            form.reset();
+            closePopup();
         };
     }
 

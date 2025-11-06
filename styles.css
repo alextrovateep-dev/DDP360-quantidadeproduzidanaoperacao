@@ -127,6 +127,23 @@ select, input[type="number"], button {
     padding: 8px 10px;
 }
 
+/* esconder setas dos inputs numéricos (chrome/edge) */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+/* firefox */
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+.btn { cursor: pointer; border-radius: 8px; padding: 8px 12px; border: 1px solid var(--border); background: #f8fafc; }
+.btn.primary { background: #2563eb; color: #fff; border-color: #1d4ed8; }
+.btn.primary:hover { background: #1d4ed8; }
+.btn.secondary { background: #f1f5f9; }
+.btn.secondary:hover { background: #e2e8f0; }
+
 .btn-warning { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
 .btn-warning:hover { background: #fde68a; border-color: #d97706; }
 

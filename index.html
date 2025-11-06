@@ -33,32 +33,6 @@
                         <h2>Operações da OP</h2>
                         <div id="operationsTableContainer"></div>
                     </section>
-
-                    <section class="panel simulation-panel" hidden>
-                        <h2>Simulação e Reporte Parcial</h2>
-                        <form id="reportForm" class="report-form">
-                            <div class="form-row">
-                                <label for="operationSelect">Operação</label>
-                                <select id="operationSelect"></select>
-                            </div>
-                            <div class="form-row">
-                                <label for="goodQtyInput">Quantidade BOA</label>
-                                <input id="goodQtyInput" type="number" min="0" step="1" placeholder="pcs boas" required>
-                            </div>
-                            <div class="form-row">
-                                <label for="scrapQtyInput">Quantidade REFUGADA</label>
-                                <input id="scrapQtyInput" type="number" min="0" step="1" placeholder="pcs refugadas" required>
-                            </div>
-                            <div class="form-row">
-                                <button type="submit">Reportar</button>
-                            </div>
-                        </form>
-                        <div id="resultArea" class="result-area" aria-live="polite"></div>
-                        <div class="log-area">
-                            <h3>Histórico</h3>
-                            <ul id="logList"></ul>
-                        </div>
-                    </section>
                 </main>
 
                 <section class="machines" id="machinesGrid"></section>

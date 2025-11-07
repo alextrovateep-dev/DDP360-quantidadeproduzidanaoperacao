@@ -28,14 +28,53 @@
         </aside>
         <div class="main-content">
             <div id="pageApontamento">
-                <main class="layout">
-                    <section class="panel operations-panel">
-                        <h2>Operações da OP</h2>
-                        <div id="operationsTableContainer"></div>
-                    </section>
-                </main>
+                <div class="apontamento-shell">
+                    <div class="apontamento-main">
+                        <section class="panel escalation-panel" aria-label="Configuração de escalonamento por email">
+                            <div class="panel-header">
+                                <h2>Escalonamento por Email</h2>
+                                <span class="panel-sub">Defina o tempo máximo para o supervisor responder antes do disparo automático de email.</span>
+                            </div>
+                            <div class="escalation-config">
+                                <label for="emailEscalationInput">Tempo para disparo do email (minutos)</label>
+                                <div class="escalation-controls">
+                                    <input type="number" id="emailEscalationInput" min="1" step="1" />
+                                    <button id="emailEscalationApply" class="btn secondary">Aplicar</button>
+                                </div>
+                                <p class="escalation-help">
+                                    Quando um evento pendente ultrapassar esse tempo, o sistema exibirá um aviso indicando que um email será enviado para a conta configurada no TeepNotificação.
+                                </p>
+                            </div>
+                        </section>
 
-                <section class="machines" id="machinesGrid"></section>
+                        <main class="layout">
+                            <section class="panel operations-panel">
+                                <h2>Operações da OP</h2>
+                                <div id="operationsTableContainer"></div>
+                            </section>
+                        </main>
+
+                        <section class="machines" id="machinesGrid"></section>
+
+                        <section class="panel report-panel">
+                            <div class="panel-header">
+                                <h2>Relatório de Excessos</h2>
+                                <span class="panel-sub">Eventos confirmados e justificativas</span>
+                            </div>
+                            <div id="eventReportContainer" class="report-table-wrapper"></div>
+                        </section>
+                    </div>
+
+                    <aside class="supervisor-panel" aria-label="Simulação do aplicativo do supervisor">
+                        <header class="supervisor-header">
+                            <div class="supervisor-title">App Supervisor • Simulação</div>
+                            <small class="supervisor-subtitle">Pendentes aguardando justificativa</small>
+                        </header>
+                        <section class="supervisor-body">
+                            <ul id="eventPendingList" class="event-list" aria-live="polite"></ul>
+                        </section>
+                    </aside>
+                </div>
             </div>
 
             <div id="pageDDP360" hidden>
@@ -53,6 +92,27 @@
                     </ol>
                     <p>
                         Próximos passos: integração com ERP, autenticação por máquina, registro de turnos e motivos.
+                    </p>
+                    <h3>Fluxo detalhado de produção e alertas</h3>
+                    <ul class="ddp-flow">
+                        <li><strong>Operador</strong> registra produção etapa a etapa. O sistema confirma que boas+refugo não excedem o limite definido (previsto da OP ou boas da etapa anterior).</li>
+                        <li>Ao tentar exceder o limite, surge um popup. Se o operador <em>cancelar</em>, nada é salvo. Se <em>confirmar</em>, a produção é gravada e um <strong>evento de ocorrência</strong> é aberto automaticamente para o supervisor.</li>
+                        <li>O evento guarda: data/hora da confirmação, OP, etapa, máquina, limites, quantidade produzida, excesso, usuário e status “Pendente”.</li>
+                        <li>O painel “App Supervisor” (simulação do celular) recebe esse evento em tempo real, aguardando justificativa.</li>
+                        <li>Se o evento não for tratado dentro do tempo configurado na área “Escalonamento por Email”, o sistema exibe o aviso de que um email será disparado automaticamente para a conta parametrizada no TeepNotificação.</li>
+                        <li>Quando o supervisor abrir o evento, seleciona o motivo e confirma. O status muda para “Resolvido”, é calculado o tempo de resposta e um segundo email de confirmação é disparado automaticamente, informando que o excesso foi tratado.</li>
+                        <li>Todos os eventos (pendentes e resolvidos) ficam disponíveis na tabela “Relatório de Excessos”, com registros de hora da confirmação do operador, disparo de email, justificativa e tempo de resposta.</li>
+                    </ul>
+                    <h3>Execução do escalonamento de email</h3>
+                    <p>
+                        O protótipo demonstra duas notificações automáticas:
+                    </p>
+                    <ol class="ddp-email">
+                        <li><strong>Email de alerta</strong> – Disparado quando o tempo configurado expira e o evento segue pendente. O protótipo mostra o popup “Escalonamento por Email” para sinalizar que o envio ocorrerá.</li>
+                        <li><strong>Email de encerramento</strong> – Disparado quando o supervisor justifica o excesso após o alerta. O protótipo exibe o popup “Email de Encerramento”, evidenciando que a cadeia de escalonamento foi concluída.</li>
+                    </ol>
+                    <p>
+                        Esses avisos garantem que o cliente visualize todo o ciclo: registro no terminal, recebimento no aplicativo móvel e escalonamentos automáticos por email. Para implantação oficial, basta conectar os mesmos gatilhos à infraestrutura do TeepNotificação.
                     </p>
                 </section>
 

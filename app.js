@@ -1,7 +1,8 @@
 (function () {
     const STORAGE_KEYS = {
         SETTINGS: 'teepoee.settings',
-        REPORTS: 'teepoee.reports'
+        REPORTS: 'teepoee.reports',
+        EVENTS: 'teepoee.events'
     };
 
     const DEFAULT_SETTINGS = {
@@ -9,7 +10,8 @@
         showPrev: 'yes', // yes | no
         sourcePrev: 'erp', // erp | manual
         manualPrevQty: null,
-        machineStatus: 'stopped' // stopped | running
+        machineStatus: 'stopped', // stopped | running
+        emailEscalationMinutes: 5
     };
 
     // Mock ERP data and OPs
@@ -34,11 +36,19 @@
         }
     ];
 
+    const EVENT_REASONS = [
+        'Reprocesso autorizado',
+        'Ajuste de retrabalho',
+        'Refugo recuperado',
+        'Produção extra por demanda'
+    ];
+
     const AppState = {
         selectedOpId: MOCK_OPS[0].id,
         // reports: { [opId]: { [operationCode]: { good: number, scrap: number } } }
         reports: loadReports(),
-        settings: loadSettings()
+        settings: loadSettings(),
+        events: loadEvents()
     };
 
     function loadSettings() {
@@ -48,6 +58,105 @@
         } catch (e) {
             return { ...DEFAULT_SETTINGS };
         }
+    }
+
+    function createOverproductionEvent({
+        op,
+        operation,
+        machineId,
+        cap,
+        requestedGood,
+        excess,
+        remaining,
+        producedGood,
+        scrapTotal
+    }) {
+        if (!op || !operation) return;
+        const now = new Date().toISOString();
+        const event = {
+            id: `evt-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+            status: 'pending',
+            opId: op.id,
+            opTitle: op.title,
+            operationCode: operation.code,
+            operationName: operation.name,
+            machineId,
+            operatorName: 'Operador Simulado',
+            plannedOpQty: operation.erpPlannedQty || 0,
+            previousLimit: cap,
+            producedGood,
+            scrapTotal,
+            requestedGood,
+            excess,
+            remaining,
+            timestampOperator: now,
+            timestampSupervisor: null,
+            supervisorReason: null,
+            responseMs: null,
+            escalationNotified: false,
+            escalationNoticeTimestamp: null,
+            escalationResolvedNotified: false,
+            escalationResolvedTimestamp: null
+        };
+
+        const events = {
+            pending: [event, ...(AppState.events?.pending || [])],
+            resolved: [...(AppState.events?.resolved || [])]
+        };
+        saveEvents(events);
+    }
+
+    function resolveEvent(eventId, reason) {
+        const pending = [...(AppState.events?.pending || [])];
+        const resolved = [...(AppState.events?.resolved || [])];
+        const idx = pending.findIndex(evt => evt.id === eventId);
+        if (idx === -1) return;
+        const event = pending[idx];
+        const resolvedAt = new Date().toISOString();
+        const responseMs = event.timestampOperator ? (new Date(resolvedAt).getTime() - new Date(event.timestampOperator).getTime()) : null;
+        const updated = {
+            ...event,
+            status: 'resolved',
+            supervisorReason: reason,
+            timestampSupervisor: resolvedAt,
+            responseMs
+        };
+        let notifyResolution = false;
+        if (updated.escalationNotified && !updated.escalationResolvedNotified) {
+            updated.escalationResolvedNotified = true;
+            updated.escalationResolvedTimestamp = resolvedAt;
+            notifyResolution = true;
+        }
+        pending.splice(idx, 1);
+        resolved.unshift(updated);
+        saveEvents({ pending, resolved });
+        if (notifyResolution) {
+            showEscalationResolvedAlert(updated);
+        }
+    }
+
+    const dateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'medium' });
+    const timeFormatter = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    function formatDateTime(iso) {
+        if (!iso) return '—';
+        try { return dateFormatter.format(new Date(iso)); } catch (e) { return '—'; }
+    }
+
+    function formatTime(iso) {
+        if (!iso) return '—';
+        try { return timeFormatter.format(new Date(iso)); } catch (e) { return '—'; }
+    }
+
+    function formatDuration(ms) {
+        if (ms == null) return '—';
+        const abs = Math.max(ms, 0);
+        const totalMinutes = Math.floor(abs / 60000);
+        const seconds = Math.floor((abs % 60000) / 1000);
+        const parts = [];
+        if (totalMinutes > 0) parts.push(`${totalMinutes}m`);
+        parts.push(`${seconds.toString().padStart(2, '0')}s`);
+        return parts.join(' ');
     }
 
     function saveSettings(settings) {
@@ -68,6 +177,29 @@
     function saveReports(reports) {
         AppState.reports = { ...reports };
         localStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(AppState.reports));
+        render();
+    }
+
+    function loadEvents() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.EVENTS);
+            if (!raw) return { pending: [], resolved: [] };
+            const parsed = JSON.parse(raw);
+            return {
+                pending: Array.isArray(parsed.pending) ? parsed.pending : [],
+                resolved: Array.isArray(parsed.resolved) ? parsed.resolved : []
+            };
+        } catch (e) {
+            return { pending: [], resolved: [] };
+        }
+    }
+
+    function saveEvents(events) {
+        AppState.events = {
+            pending: events.pending || [],
+            resolved: events.resolved || []
+        };
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(AppState.events));
         render();
     }
 
@@ -114,40 +246,24 @@
         const requestedGood = nextGood; // apenas boas novas contam para pendente
 
         let cap;
-        let capLabel;
         if (operIndex === 0) {
             // Primeira etapa: processado = apenas boas produzidas (refugo não aumenta processado)
             cap = op.operations[operIndex].erpPlannedQty || 0;
-            capLabel = `Previsto OP (operação ${operationCode}): ${cap}`;
             const processedNow = current.good || 0; // apenas boas, refugo não conta
             const remaining = Math.max(cap - processedNow, 0);
-            if (requestedGood <= remaining) return { status: 'ok', message: `OK: produção ${requestedGood} ≤ pendente ${remaining}.` };
-            if (skipConfirm) return { status: 'confirmed', message: `Aprovado ciente: produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
-            return { status: 'needs_confirm', message: `Produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
+            if (requestedGood <= remaining) return { status: 'ok', message: `OK: produção ${requestedGood} ≤ pendente ${remaining}.`, cap, remaining, processed: processedNow };
+            if (skipConfirm) return { status: 'confirmed', message: `Aprovado ciente: produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining, cap, processed: processedNow };
+            return { status: 'needs_confirm', message: `Produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining, cap, processed: processedNow };
         } else {
             // Demais etapas: limite é igual às peças boas finais da etapa anterior (boas - refugos)
             const prevOper = op.operations[operIndex - 1];
             cap = getFinalGoods(op.id, prevOper.code);
-            capLabel = `Boas finais da operação anterior (${prevOper.code}): ${cap}`;
             const processedNow = current.good || 0; // apenas boas, refugo não conta
             const remaining = Math.max(cap - processedNow, 0);
-            if (requestedGood <= remaining) return { status: 'ok', message: `OK: produção ${requestedGood} ≤ pendente ${remaining}.` };
-            if (skipConfirm) return { status: 'confirmed', message: `Aprovado ciente: produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
-            return { status: 'needs_confirm', message: `Produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining };
+            if (requestedGood <= remaining) return { status: 'ok', message: `OK: produção ${requestedGood} ≤ pendente ${remaining}.`, cap, remaining, processed: processedNow };
+            if (skipConfirm) return { status: 'confirmed', message: `Aprovado ciente: produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining, cap, processed: processedNow };
+            return { status: 'needs_confirm', message: `Produção ${requestedGood} > pendente ${remaining}.`, excess: requestedGood - remaining, remaining, cap, processed: processedNow };
         }
-    }
-
-    function recordApprovalEvent(opId, operationCode, excess, details) {
-        const events = JSON.parse(localStorage.getItem('teepoee.approval_events') || '[]');
-        events.push({
-            timestamp: new Date().toISOString(),
-            opId,
-            operationCode,
-            excess,
-            details,
-            user: 'operador' // pode vir de autenticação futura
-        });
-        localStorage.setItem('teepoee.approval_events', JSON.stringify(events));
     }
 
     function renderOPSelector() {
@@ -173,6 +289,7 @@
             const next = { ...AppState.reports };
             delete next[AppState.selectedOpId];
             saveReports(next);
+            saveEvents({ pending: [], resolved: [] });
         };
     }
 
@@ -235,13 +352,20 @@
     function render() {
         renderOPSelector();
         renderOperationsTable();
+        renderEscalationConfig();
         renderMachinesGrid();
+        renderSupervisorPanel();
+        renderEventReport();
         wireNavigation();
         wireDdp360Form();
+        checkEscalationTimers();
     }
 
     window.TeepOEEApp = {
-        init: render
+        init() {
+            render();
+            startEscalationTicker();
+        }
     };
 
     // renderStatusBar/renderKpis removidos (seções não exibidas)
@@ -292,7 +416,6 @@
                     <div class="form-row" style="display:flex; gap:8px; justify-content:flex-start;">
                         <button type="button" class="btn btn-warning" data-action="commit-scrap">Apontar Refugo</button>
                     </div>
-                    <div class="inline-warn" data-warn></div>
                 </form>
             `;
 
@@ -303,7 +426,6 @@
             const scrapInput = form.querySelector('input[name="scrap"]');
             const btnGood = form.querySelector('button[data-action="commit-good"]');
             const btnScrap = form.querySelector('button[data-action="commit-scrap"]');
-            const warnBox = form.querySelector('[data-warn]');
             const codeAttr = Number(form.getAttribute('data-oper'));
             // pré-visualização removida: contas só ao clicar em "Apontar"
 
@@ -311,14 +433,18 @@
                 const g = Number(goodInput.value) || 0;
                 if (g <= 0) return;
                 const result = validateSequence({ op, operationCode: codeAttr, nextGood: g, nextScrap: 0 });
+                const meta = {
+                    machineId,
+                    cap
+                };
                 if (result.status === 'needs_confirm') {
                     showConfirmPopup(result, op.id, codeAttr, g, 0, form, { current: null }, () => {
-                        render(); // atualizar cards após confirmação
-                    });
+                        render();
+                    }, meta);
                 } else if (result.status === 'ok' || result.status === 'confirmed') {
                     addReport(op.id, codeAttr, g, 0);
                     form.reset();
-                    render(); // atualizar cards após apontamento
+                    render();
                 }
             };
 
@@ -341,6 +467,257 @@
         });
     }
 
+    function renderSupervisorPanel() {
+        const list = document.getElementById('eventPendingList');
+        if (!list) return;
+        const pending = AppState.events?.pending || [];
+        list.innerHTML = '';
+        if (pending.length === 0) {
+            const empty = document.createElement('li');
+            empty.className = 'empty-events';
+            empty.textContent = 'Nenhum evento pendente. Produção dentro dos limites.';
+            list.appendChild(empty);
+            return;
+        }
+        pending.forEach(event => {
+            const li = document.createElement('li');
+            li.className = 'event-card';
+            li.innerHTML = `
+                <div class="event-title">${event.operationCode} - ${event.operationName}</div>
+                <div class="event-meta">
+                    <span>${event.machineId || 'Máquina'}</span>
+                    <span>${formatTime(event.timestampOperator)}</span>
+                </div>
+                <div class="event-meta">
+                    <span>OP ${event.opId}</span>
+                    <span class="excess">+${event.excess}</span>
+                </div>
+            `;
+            li.onclick = () => openEventResolutionModal(event.id);
+            list.appendChild(li);
+        });
+    }
+
+    function openEventResolutionModal(eventId) {
+        const event = (AppState.events?.pending || []).find(evt => evt.id === eventId);
+        if (!event) return;
+        const overlay = document.getElementById('popupOverlay');
+        const msg = document.getElementById('popupMessage');
+        if (!overlay || !msg) return;
+        overlay.hidden = false;
+        overlay.onclick = null;
+        const options = EVENT_REASONS.map(reason => `<option value="${reason}">${reason}</option>`).join('');
+        const limitText = event.previousLimit ?? '—';
+        const producedText = event.producedGood ?? '—';
+        msg.innerHTML = `
+            <div class="resolve-modal">
+                <h3>Justificar excesso</h3>
+                <p class="resolve-resume">
+                    <strong>${event.operationCode} • ${event.operationName}</strong><br>
+                    Máquina: ${event.machineId || '—'}<br>
+                    OP: ${event.opId}<br>
+                    Produção confirmada: <strong>${producedText}</strong><br>
+                    Limite permitido: <strong>${limitText}</strong><br>
+                    Excesso: <strong>+${event.excess}</strong>
+                </p>
+                <label for="resolve-reason">Motivo da autorização</label>
+                <select id="resolve-reason">
+                    <option value="" disabled selected>Selecione uma justificativa...</option>
+                    ${options}
+                </select>
+                <div class="resolve-actions">
+                    <button id="resolve-cancel" class="btn secondary">Cancelar</button>
+                    <button id="resolve-confirm" class="btn primary">Confirmar justificativa</button>
+                </div>
+            </div>
+        `;
+        const cancelBtn = document.getElementById('resolve-cancel');
+        const confirmBtn = document.getElementById('resolve-confirm');
+        const reasonSelect = document.getElementById('resolve-reason');
+        reasonSelect.onchange = () => {
+            reasonSelect.classList.remove('invalid');
+        };
+        cancelBtn.onclick = () => {
+            overlay.hidden = true;
+        };
+        confirmBtn.onclick = () => {
+            const reason = reasonSelect.value;
+            if (!reason) {
+                reasonSelect.classList.add('invalid');
+                return;
+            }
+            resolveEvent(eventId, reason);
+            overlay.hidden = true;
+        };
+    }
+
+    function renderEventReport() {
+        const container = document.getElementById('eventReportContainer');
+        if (!container) return;
+        const allEvents = [
+            ...(AppState.events?.pending || []),
+            ...(AppState.events?.resolved || [])
+        ];
+        if (allEvents.length === 0) {
+            container.innerHTML = '<div class="empty-events" style="color: var(--muted); background: #fff; border-color: var(--border);">Nenhum evento registrado até o momento.</div>';
+            return;
+        }
+        const rows = allEvents
+            .sort((a, b) => new Date(b.timestampOperator).getTime() - new Date(a.timestampOperator).getTime())
+            .map(event => `
+                <tr>
+                    <td>${formatDateTime(event.timestampOperator)}</td>
+                    <td>${formatDateTime(event.timestampSupervisor)}</td>
+                    <td>${formatDateTime(event.escalationNoticeTimestamp)}</td>
+                    <td>${formatDateTime(event.escalationResolvedTimestamp)}</td>
+                    <td>${event.opId}</td>
+                    <td>${event.operationCode} - ${event.operationName}</td>
+                    <td>${event.machineId || '—'}</td>
+                    <td>${event.plannedOpQty ?? '—'}</td>
+                    <td>${event.previousLimit ?? '—'}</td>
+                    <td>${event.producedGood ?? '—'}</td>
+                    <td>${event.excess ?? '—'}</td>
+                    <td><span class="status-chip ${event.status}">${event.status === 'resolved' ? 'Resolvido' : 'Pendente'}</span></td>
+                    <td>${event.supervisorReason || '—'}</td>
+                    <td>${formatDuration(event.responseMs)}</td>
+                </tr>
+            `).join('');
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Operador confirmou</th>
+                        <th>Supervisor justificou</th>
+                        <th>Email disparado</th>
+                        <th>Email encerramento</th>
+                        <th>OP</th>
+                        <th>Etapa</th>
+                        <th>Máquina</th>
+                        <th>Prev. OP</th>
+                        <th>Limite anterior</th>
+                        <th>Produzido</th>
+                        <th>Excesso</th>
+                        <th>Status</th>
+                        <th>Justificativa</th>
+                        <th>Tempo resposta</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
+    }
+
+    let escalationIntervalId = null;
+
+    function startEscalationTicker() {
+        if (escalationIntervalId != null) return;
+        escalationIntervalId = setInterval(checkEscalationTimers, 15000);
+        checkEscalationTimers();
+    }
+
+    function checkEscalationTimers() {
+        const minutes = AppState.settings?.emailEscalationMinutes;
+        if (!minutes || minutes <= 0) return;
+        const thresholdMs = minutes * 60000;
+        const now = Date.now();
+        const pending = AppState.events?.pending || [];
+        const resolved = AppState.events?.resolved || [];
+        let updated = false;
+        pending.forEach(event => {
+            if (!event.timestampOperator || event.escalationNotified) return;
+            const elapsed = now - new Date(event.timestampOperator).getTime();
+            if (elapsed >= thresholdMs) {
+                event.escalationNotified = true;
+                event.escalationNoticeTimestamp = new Date().toISOString();
+                showEscalationAlert(event);
+                updated = true;
+            }
+        });
+        if (updated) {
+            saveEvents({ pending, resolved });
+        }
+    }
+
+    function showEscalationAlert(event) {
+        const overlay = document.getElementById('popupOverlay');
+        const msg = document.getElementById('popupMessage');
+        if (!overlay || !msg) {
+            alert('Tempo limite atingido. Email será disparado ao supervisor.');
+            return;
+        }
+        if (overlay.hidden === false) {
+            setTimeout(() => showEscalationAlert(event), 1000);
+            return;
+        }
+        msg.innerHTML = `
+            <div class="resolve-modal">
+                <h3>Escalonamento por Email</h3>
+                <p class="resolve-resume">
+                    O evento da operação <strong>${event.operationCode} • ${event.operationName}</strong> (OP ${event.opId})
+                    excedeu o tempo configurado de resposta.<br><br>
+                    Um email será enviado para a conta cadastrada no TeepNotificação informando o excesso.
+                </p>
+                <div class="resolve-actions">
+                    <button id="escalation-ok" class="btn primary">Entendi</button>
+                </div>
+            </div>
+        `;
+        overlay.hidden = false;
+        overlay.onclick = null;
+        const okBtn = document.getElementById('escalation-ok');
+        okBtn.onclick = () => {
+            overlay.hidden = true;
+        };
+    }
+
+    function showEscalationResolvedAlert(event) {
+        const overlay = document.getElementById('popupOverlay');
+        const msg = document.getElementById('popupMessage');
+        if (!overlay || !msg) {
+            alert('Evento justificado. Email de encerramento será enviado ao supervisor.');
+            return;
+        }
+        if (overlay.hidden === false) {
+            setTimeout(() => showEscalationResolvedAlert(event), 1000);
+            return;
+        }
+        msg.innerHTML = `
+            <div class="resolve-modal">
+                <h3>Email de Encerramento</h3>
+                <p class="resolve-resume">
+                    O evento da operação <strong>${event.operationCode} • ${event.operationName}</strong> (OP ${event.opId}) foi justificado pelo supervisor.<br><br>
+                    Um email de confirmação será enviado para a conta cadastrada, informando que o excesso foi tratado.
+                </p>
+                <div class="resolve-actions">
+                    <button id="escalation-close-ok" class="btn primary">Ok</button>
+                </div>
+            </div>
+        `;
+        overlay.hidden = false;
+        overlay.onclick = null;
+        const okBtn = document.getElementById('escalation-close-ok');
+        okBtn.onclick = () => {
+            overlay.hidden = true;
+        };
+    }
+
+    function renderEscalationConfig() {
+        const input = document.getElementById('emailEscalationInput');
+        const applyBtn = document.getElementById('emailEscalationApply');
+        if (!input || !applyBtn) return;
+        const current = AppState.settings?.emailEscalationMinutes ?? DEFAULT_SETTINGS.emailEscalationMinutes;
+        input.value = current;
+        applyBtn.onclick = () => {
+            const minutes = Number(input.value);
+            if (!Number.isFinite(minutes) || minutes <= 0) {
+                showPopup('Informe um tempo válido (mínimo 1 minuto) para o disparo do email.');
+                return;
+            }
+            saveSettings({ ...AppState.settings, emailEscalationMinutes: Math.round(minutes) });
+            showPopup(`Tempo de disparo atualizado para ${Math.round(minutes)} minuto(s).`);
+        };
+    }
+
     function showPopup(message) {
         const overlay = document.getElementById('popupOverlay');
         const msg = document.getElementById('popupMessage');
@@ -352,14 +729,27 @@
         setTimeout(hide, 2500);
     }
 
-    function showConfirmPopup(result, opId, operationCode, good, scrap, form, commitTimerRef, onClose) {
+    function showConfirmPopup(result, opId, operationCode, good, scrap, form, commitTimerRef, onClose, meta = {}) {
         const overlay = document.getElementById('popupOverlay');
         const msg = document.getElementById('popupMessage');
         if (!overlay || !msg) {
             if (confirm(`Produção ${good + scrap} > pendente ${result.remaining}. Excesso: ${result.excess}. Confirma?`)) {
                 const r = validateSequence({ op: getSelectedOP(), operationCode, nextGood: good, nextScrap: scrap, skipConfirm: true });
-                recordApprovalEvent(opId, operationCode, result.excess, r);
                 addReport(opId, operationCode, good, scrap);
+                const op = getSelectedOP();
+                const operation = op.operations.find(o => o.code === operationCode) || { code: operationCode, name: `Operação ${operationCode}`, erpPlannedQty: 0 };
+                const reported = getReported(opId, operationCode);
+                createOverproductionEvent({
+                    op,
+                    operation,
+                    machineId: meta.machineId || 'Máquina',
+                    cap: meta.cap ?? result.cap ?? operation.erpPlannedQty ?? 0,
+                    requestedGood: good,
+                    excess: result.excess,
+                    remaining: result.remaining,
+                    producedGood: reported.good,
+                    scrapTotal: reported.scrap
+                });
                 form.reset();
             }
             if (onClose) onClose();
@@ -395,11 +785,23 @@
         };
         yesBtn.onclick = () => {
             const r = validateSequence({ op: getSelectedOP(), operationCode, nextGood: good, nextScrap: scrap, skipConfirm: true });
-            recordApprovalEvent(opId, operationCode, result.excess, r);
             addReport(opId, operationCode, good, scrap);
+            const op = getSelectedOP();
+            const operation = op.operations.find(o => o.code === operationCode) || { code: operationCode, name: `Operação ${operationCode}`, erpPlannedQty: 0 };
+            const reported = getReported(opId, operationCode);
+            createOverproductionEvent({
+                op,
+                operation,
+                machineId: meta.machineId || 'Máquina',
+                cap: meta.cap ?? result.cap ?? operation.erpPlannedQty ?? 0,
+                requestedGood: good,
+                excess: result.excess,
+                remaining: result.remaining,
+                producedGood: reported.good,
+                scrapTotal: reported.scrap
+            });
             form.reset();
             closePopup();
-            render(); // atualizar cards após confirmação
         };
         noBtn.onclick = () => {
             // Cancelar timer se ainda existir

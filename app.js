@@ -2,7 +2,8 @@
     const STORAGE_KEYS = {
         SETTINGS: 'teepoee.settings',
         REPORTS: 'teepoee.reports',
-        EVENTS: 'teepoee.events'
+        EVENTS: 'teepoee.events',
+        CLOSED_OPS: 'teepoee.closedOps'
     };
 
     const DEFAULT_SETTINGS = {
@@ -48,7 +49,8 @@
         // reports: { [opId]: { [operationCode]: { good: number, scrap: number } } }
         reports: loadReports(),
         settings: loadSettings(),
-        events: loadEvents()
+        events: loadEvents(),
+        closedOperations: loadClosedOperations()
     };
 
     function loadSettings() {
@@ -203,6 +205,33 @@
         render();
     }
 
+    function loadClosedOperations() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.CLOSED_OPS);
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function saveClosedOperations(closedOps) {
+        AppState.closedOperations = { ...closedOps };
+        localStorage.setItem(STORAGE_KEYS.CLOSED_OPS, JSON.stringify(AppState.closedOperations));
+        render();
+    }
+
+    function isOperationClosed(opId, operationCode) {
+        const key = `${opId}_${operationCode}`;
+        return AppState.closedOperations[key] === true;
+    }
+
+    function closeOperation(opId, operationCode) {
+        const next = { ...AppState.closedOperations };
+        const key = `${opId}_${operationCode}`;
+        next[key] = true;
+        saveClosedOperations(next);
+    }
+
     function getSelectedOP() {
         return MOCK_OPS.find(o => o.id === AppState.selectedOpId);
     }
@@ -290,6 +319,14 @@
             delete next[AppState.selectedOpId];
             saveReports(next);
             saveEvents({ pending: [], resolved: [] });
+            // Limpar operações fechadas da OP atual
+            const closedOps = { ...AppState.closedOperations };
+            Object.keys(closedOps).forEach(key => {
+                if (key.startsWith(`${AppState.selectedOpId}_`)) {
+                    delete closedOps[key];
+                }
+            });
+            saveClosedOperations(closedOps);
         };
     }
 
@@ -396,10 +433,12 @@
             const pending = Math.max(cap - processed, 0);
 
             const machineId = `M${idx + 1}`;
+            const isClosed = isOperationClosed(op.id, oper.code);
 
             card.innerHTML = `
                 <div class="machine-header">
                     <span>${machineId} • ${oper.code} - ${oper.name}</span>
+                    ${isClosed ? '<span style="background: #dcfce7; color: #14532d; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">OP FECHADA</span>' : ''}
                 </div>
                 <div class="op-metrics">
                     <div class="metric"><div class="label">Atd Prevista</div><div class="value" data-planned>${plannedTotal}</div></div>
@@ -408,14 +447,18 @@
                     <div class="metric"><div class="label">Pendente</div><div class="value" data-pending>${pending}</div></div>
                 </div>
                 <form class="machine-form" data-oper="${oper.code}">
-                    <div class="form-row"><label>Quantidade BOA</label><input type="number" inputmode="numeric" name="good" min="0" step="1" placeholder="pcs boas"></div>
+                    <div class="form-row"><label>Quantidade BOA</label><input type="number" inputmode="numeric" name="good" min="0" step="1" placeholder="pcs boas" ${isClosed ? 'disabled' : ''}></div>
                     <div class="form-row" style="display:flex; gap:8px; justify-content:flex-start;">
-                        <button type="button" class="btn primary" data-action="commit-good">Apontar Produção</button>
+                        <button type="button" class="btn primary" data-action="commit-good" ${isClosed ? 'disabled' : ''}>Apontar Produção</button>
                     </div>
-                    <div class="form-row"><label>Quantidade REFUGADA</label><input type="number" inputmode="numeric" name="scrap" min="0" step="1" placeholder="pcs refugadas"></div>
+                    <div class="form-row"><label>Quantidade REFUGADA</label><input type="number" inputmode="numeric" name="scrap" min="0" step="1" placeholder="pcs refugadas" ${isClosed ? 'disabled' : ''}></div>
                     <div class="form-row" style="display:flex; gap:8px; justify-content:flex-start;">
-                        <button type="button" class="btn btn-warning" data-action="commit-scrap">Apontar Refugo</button>
+                        <button type="button" class="btn btn-warning" data-action="commit-scrap" ${isClosed ? 'disabled' : ''}>Apontar Refugo</button>
                     </div>
+                    <div class="form-row" style="display:flex; gap:8px; justify-content:flex-start; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+                        <button type="button" class="btn secondary" data-action="close-op" ${isClosed ? 'disabled' : ''}>Fechar OP</button>
+                    </div>
+                    ${isClosed ? '<div style="background: #fef3c7; color: #92400e; padding: 8px; border-radius: 6px; font-size: 12px; margin-top: 8px; text-align: center;">Esta operação está fechada. Não é possível apontar produção ou refugo.</div>' : ''}
                 </form>
             `;
 
@@ -430,6 +473,10 @@
             // pré-visualização removida: contas só ao clicar em "Apontar"
 
             btnGood.onclick = () => {
+                if (isClosed) {
+                    showPopup('Esta operação está fechada. Não é possível apontar produção.');
+                    return;
+                }
                 const g = Number(goodInput.value) || 0;
                 if (g <= 0) return;
                 const result = validateSequence({ op, operationCode: codeAttr, nextGood: g, nextScrap: 0 });
@@ -449,6 +496,10 @@
             };
 
             btnScrap.onclick = () => {
+                if (isClosed) {
+                    showPopup('Esta operação está fechada. Não é possível apontar refugo.');
+                    return;
+                }
                 const s = Number(scrapInput.value) || 0;
                 if (s <= 0) return;
                 // boas finais disponíveis = good - scrap (boas que ainda não foram refugadas)
@@ -461,6 +512,16 @@
                 form.reset();
                 render(); // atualizar cards após apontamento
             };
+
+            const btnCloseOP = form.querySelector('button[data-action="close-op"]');
+            btnCloseOP.onclick = () => {
+                if (isClosed) {
+                    showPopup('Esta operação já está fechada.');
+                    return;
+                }
+                showCloseOPPopup(op, oper, machineId, cap, processed, pending, finalGoods, codeAttr);
+            };
+
             // sem preview: os valores do card são atualizados após o apontamento
 
             container.appendChild(card);
@@ -811,6 +872,63 @@
             }
             // Limpar campos do formulário SEM salvar
             form.reset();
+            closePopup();
+        };
+    }
+
+    function showCloseOPPopup(op, operation, machineId, cap, processed, pending, finalGoods, operationCode) {
+        const overlay = document.getElementById('popupOverlay');
+        const msg = document.getElementById('popupMessage');
+        if (!overlay || !msg) {
+            if (confirm(`Deseja fechar a operação ${operation.code} - ${operation.name}?`)) {
+                closeOperation(op.id, operationCode);
+            }
+            return;
+        }
+
+        const plannedQty = operation.erpPlannedQty || 0; // Quantidade prevista da OP
+        const producedQty = processed; // Quantidade produzida (boas produzidas)
+        
+        msg.innerHTML = `
+            <div style="text-align: left; margin-bottom: 12px;">
+                <strong>Fechar Operação</strong><br>
+                <br>
+                <strong>${machineId} • ${operation.code} - ${operation.name}</strong><br>
+                <br>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin: 8px 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>Quantidade Prevista:</span>
+                        <strong>${plannedQty}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>Quantidade Pendente:</span>
+                        <strong>${pending}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Quantidade Produzida:</span>
+                        <strong>${producedQty}</strong>
+                    </div>
+                </div>
+                <br>
+                Deseja realmente fechar esta operação?
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: center;">
+                <button id="close-op-yes" style="background: #22a06b; color: white; border: 0; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Sim, fechar</button>
+                <button id="close-op-no" style="background: #c0392b; color: white; border: 0; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancelar</button>
+            </div>
+        `;
+        overlay.hidden = false;
+        overlay.onclick = null;
+        const yesBtn = document.getElementById('close-op-yes');
+        const noBtn = document.getElementById('close-op-no');
+        const closePopup = () => {
+            overlay.hidden = true;
+        };
+        yesBtn.onclick = () => {
+            closeOperation(op.id, operationCode);
+            closePopup();
+        };
+        noBtn.onclick = () => {
             closePopup();
         };
     }

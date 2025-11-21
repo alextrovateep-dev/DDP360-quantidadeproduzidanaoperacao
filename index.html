@@ -114,6 +114,24 @@
                     <p>
                         Esses avisos garantem que o cliente visualize todo o ciclo: registro no terminal, recebimento no aplicativo móvel e escalonamentos automáticos por email. Para implantação oficial, basta conectar os mesmos gatilhos à infraestrutura do TeepNotificação.
                     </p>
+                    <h3>Fechamento de Operação</h3>
+                    <p>
+                        Cada operação (máquina) possui um botão "Fechar OP" que permite ao operador finalizar o apontamento daquela etapa específica.
+                    </p>
+                    <ul class="ddp-flow">
+                        <li>O operador pode fechar uma operação a qualquer momento, desde que tenha realizado apontamentos naquela etapa.</li>
+                        <li>Ao clicar em "Fechar OP", o sistema exibe um <strong>popup de confirmação</strong> mostrando:
+                            <ul style="margin-top: 8px; margin-left: 20px;">
+                                <li><strong>Quantidade Prevista:</strong> quantidade planejada da OP para aquela operação</li>
+                                <li><strong>Quantidade Pendente:</strong> quantidade ainda não produzida (diferença entre o limite e o já produzido)</li>
+                                <li><strong>Quantidade Produzida:</strong> total de peças boas já apontadas na operação</li>
+                            </ul>
+                        </li>
+                        <li>O operador confirma ou cancela o fechamento. Se confirmar, a operação é marcada como <strong>fechada</strong> e registrada no sistema.</li>
+                        <li><strong>Após o fechamento:</strong> a operação fica bloqueada para novos apontamentos. Os campos de produção e refugo são desabilitados, e o sistema exibe uma mensagem informando que a operação está fechada.</li>
+                        <li>O status de fechamento é persistido no sistema e mantido mesmo após recarregar a página. O botão "Reset Teste" limpa os fechamentos da OP atual.</li>
+                        <li>Esta funcionalidade garante que, uma vez finalizada uma etapa, não haja alterações acidentais nos dados já apontados, mantendo a integridade do processo de produção.</li>
+                    </ul>
                 </section>
 
                 <section class="panel">

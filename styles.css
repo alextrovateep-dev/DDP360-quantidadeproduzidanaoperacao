@@ -196,6 +196,13 @@ input[type=number] {
 
 button { cursor: pointer; }
 button:hover { border-color: var(--accent); }
+button:disabled, input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f1f5f9 !important;
+    color: #94a3b8 !important;
+}
+button:disabled:hover { border-color: var(--border); }
 
 .layout {
     display: grid;
